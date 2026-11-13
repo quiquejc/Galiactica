@@ -1,0 +1,2148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Matemáticas Galiácticas</title>
+<style>
+  :root {
+    --bg-dark: #090d16;
+    --panel: #131b2e;
+    --panel-border: #263554;
+    --cyan: #00f2fe;
+    --blue: #4facfe;
+    --green: #00e676;
+    --amber: #ffab00;
+    --red: #ff5252;
+    --purple: #b388ff;
+    --text: #f0f4f8;
+  }
+
+  * {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  body {
+    margin: 0;
+    padding: 6px;
+    background: radial-gradient(circle at top, #182238 0%, var(--bg-dark) 100%);
+    color: var(--text);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .app-container {
+    width: 100%;
+    max-width: 520px;
+    background: var(--panel);
+    border: 1.5px solid var(--panel-border);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .splash-screen {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, #16223d 0%, var(--bg-dark) 100%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .splash-screen.hidden { display: none; }
+
+  .splash-title {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--cyan);
+    margin-bottom: 8px;
+    text-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+  }
+
+  .splash-desc {
+    font-size: 0.88rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+    margin-bottom: 18px;
+  }
+
+  .cadet-input-group {
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 12px;
+    text-align: left;
+  }
+
+  .cadet-input-group label {
+    font-size: 0.76rem;
+    color: var(--amber);
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .cadet-input {
+    width: 100%;
+    background: #1b263b;
+    border: 1.5px solid var(--cyan);
+    color: #fff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 1rem;
+    font-weight: 800;
+    text-align: center;
+    outline: none;
+  }
+
+  .cadet-input.input-error {
+    border-color: var(--red);
+    box-shadow: 0 0 10px rgba(255, 82, 82, 0.6);
+  }
+
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0d1322;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--panel-border);
+    gap: 6px;
+  }
+
+  .hud-title {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: var(--cyan);
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+  }
+
+  .hud-stats {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+  }
+
+  .stat-pill {
+    background: #1a253a;
+    padding: 4px 7px;
+    border-radius: 999px;
+    border: 1px solid #2e4064;
+    cursor: pointer;
+  }
+
+  .gear-btn {
+    background: linear-gradient(135deg, #23314f, #1a253a);
+    color: var(--cyan);
+    border: 1.5px solid var(--cyan);
+    border-radius: 8px;
+    padding: 5px 9px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 8px rgba(0, 242, 254, 0.25);
+  }
+
+  .gear-btn:active { transform: scale(0.94); }
+
+  .nav-dropdown-bar {
+    background: #101726;
+    border-bottom: 1px solid var(--panel-border);
+    padding: 6px 10px;
+  }
+
+  .nav-toggle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+    color: #cbd5e1;
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .nav-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .nav-controls.collapsed { display: none; }
+
+  select.game-select {
+    width: 100%;
+    background: #1b263b;
+    color: #fff;
+    border: 1px solid #3b4d71;
+    border-radius: 8px;
+    padding: 6px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    outline: none;
+  }
+
+  .sector-progress-wrap {
+    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .sector-progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    font-weight: 700;
+  }
+
+  .module-segments-bar {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    height: 7px;
+  }
+
+  .mod-seg {
+    flex: 1;
+    background: #1e293b;
+    border-radius: 4px;
+    border: 1px solid #334155;
+    transition: all 0.25s;
+  }
+
+  .mod-seg.done { background: var(--green); border-color: #69f0ae; }
+  .mod-seg.active { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); border-color: #fff; }
+
+  .stage {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .visual-card {
+    background: #0c121e;
+    border: 1px solid #24324d;
+    border-radius: 12px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .matrix-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+    color: #cbd5e1;
+    font-weight: 700;
+  }
+
+  .rotate-btn {
+    background: #1c273d;
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    border-radius: 6px;
+    padding: 2px 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.72rem;
+  }
+
+  .matrix-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 6px 0;
+    min-height: 138px;
+    justify-content: center;
+  }
+
+  .matrix-row { display: flex; gap: 3px; align-items: center; }
+  .row-sum-badge { margin-left: 6px; font-size: 0.68rem; font-weight: 800; color: var(--amber); min-width: 20px; }
+  .energy-cell { width: 14px; height: 14px; border-radius: 3px; background: linear-gradient(135deg, var(--cyan), var(--blue)); box-shadow: 0 0 4px rgba(0, 242, 254, 0.4); }
+
+  .hint-box {
+    background: rgba(179, 136, 255, 0.12);
+    border-left: 3px solid var(--purple);
+    padding: 5px 8px;
+    border-radius: 5px;
+    font-size: 0.74rem;
+    color: #e2e8f0;
+    width: 100%;
+    text-align: left;
+  }
+
+  .interaction-card {
+    background: #0c121e;
+    border: 1px solid #24324d;
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    min-height: 170px;
+  }
+
+  .tachometer-widget {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    width: 52px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .tach-arc-radial {
+    width: 48px;
+    height: 24px;
+    border-top-left-radius: 48px;
+    border-top-right-radius: 48px;
+    background: conic-gradient(
+      from 270deg at 50% 100%,
+      #ff5252 0deg, #ff5252 56deg, 
+      #ffffff 56deg, #ffffff 60deg, 
+      #ffab00 60deg, #ffab00 120deg, 
+      #ffffff 120deg, #ffffff 124deg, 
+      #00e676 124deg, #00e676 180deg
+    );
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 2px 4px rgba(0,242,254,0.2);
+    position: relative;
+    overflow: visible;
+    flex-shrink: 0;
+  }
+  .tach-needle-rocket {
+    position: absolute;
+    bottom: -2px;
+    left: 21px;
+    width: 6px;
+    height: 22px;
+    background: linear-gradient(180deg, #00f2fe 0%, #ffffff 100%);
+    clip-path: polygon(50% 0%, 100% 80%, 75% 100%, 25% 100%, 0% 80%);
+    transform-origin: bottom center;
+    transform: rotate(0deg);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 6px rgba(0,242,254,0.8);
+    z-index: 5;
+  }
+  .tach-label {
+    font-size: 0.54rem;
+    font-weight: 800;
+    color: #94a3b8;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
+  .turbo-toast {
+    position: absolute;
+    top: 2px;
+    background: rgba(0, 230, 118, 0.3);
+    border: 1.5px solid var(--green);
+    color: #69f0ae;
+    padding: 2px 12px;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 900;
+    pointer-events: none;
+    box-shadow: 0 0 12px rgba(0, 230, 118, 0.6);
+    animation: turboToastAnim 0.4s ease-out forwards;
+    z-index: 25;
+  }
+  @keyframes turboToastAnim {
+    0% { opacity: 0; transform: translateY(8px) scale(0.8); }
+    30% { opacity: 1; transform: translateY(-2px) scale(1.1); }
+    100% { opacity: 0; transform: translateY(-12px) scale(0.9); }
+  }
+
+  .penalty-toast {
+    width: 100%;
+    background: rgba(255, 82, 82, 0.3);
+    border: 1.5px solid var(--red);
+    color: #ff8a80;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.70rem;
+    font-weight: 900;
+    text-align: center;
+    line-height: 1.25;
+    margin: 4px 0;
+    pointer-events: none;
+    box-shadow: 0 0 10px rgba(255, 82, 82, 0.5);
+    z-index: 25;
+  }
+
+  .timedown-number {
+    position: absolute;
+    top: 4px;
+    color: var(--amber);
+    font-size: 2.2rem;
+    font-weight: 900;
+    pointer-events: none;
+    animation: timedownPopAnim 0.7s ease-out forwards;
+    z-index: 30;
+    text-shadow: 0 0 12px rgba(255, 171, 0, 0.8);
+  }
+  @keyframes timedownPopAnim {
+    0% { opacity: 0; transform: scale(0.4); }
+    40% { opacity: 1; transform: scale(1.4); }
+    100% { opacity: 0; transform: scale(1.7); }
+  }
+
+  .rep-dots { display: flex; gap: 8px; margin-bottom: 4px; }
+  .rep-dot { width: 26px; height: 7px; border-radius: 4px; background: #1e293b; border: 1px solid #475569; }
+  .rep-dot.filled { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+  .equation-box { font-size: 2rem; font-weight: 900; letter-spacing: 1px; margin: 12px 0 8px 0; text-align: center; }
+  .eq-answer { display: inline-block; min-width: 56px; padding: 1px 10px; border-radius: 10px; background: #1e293b; border: 2px dashed var(--cyan); color: var(--cyan); }
+  .eq-answer.faded { color: rgba(0, 242, 254, 0.28); }
+  .eq-answer.hidden { color: var(--amber); }
+
+  .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; }
+  .opt-btn { background: #1b263b; color: #fff; border: 2px solid #334669; border-radius: 10px; padding: 10px; font-size: 1.25rem; font-weight: 800; cursor: pointer; }
+  .opt-btn:active { transform: scale(0.97); }
+  .opt-btn.correct { background: #065f46 !important; border-color: var(--green) !important; }
+  .opt-btn.wrong { background: #7f1d1d !important; border-color: var(--red) !important; }
+
+  .keypad-grid { display: none; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; max-width: 310px; }
+  .key-btn { background: #1e293b; color: #fff; border: 1.5px solid #3b4d71; border-radius: 10px; padding: 9px 0; font-size: 1.15rem; font-weight: 800; cursor: pointer; }
+  .key-btn:active { background: #2d3e5e; }
+  .key-btn.key-clear { background: #451a2b; border-color: var(--red); color: #ff8a80; }
+  .key-btn.key-submit { background: #065f46; border-color: var(--green); color: #69f0ae; }
+
+  .footer-bar { padding: 0 10px 10px 10px; display: flex; flex-direction: column; gap: 4px; }
+  .progress-track { width: 100%; height: 7px; background: #090d16; border-radius: 99px; overflow: hidden; border: 1px solid #26334d; }
+  .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--cyan), var(--green)); transition: width 0.25s ease; }
+
+  .overlay-modal { position: fixed; inset: 0; background: rgba(6, 10, 18, 0.94); display: none; flex-direction: column; align-items: center; justify-content: center; padding: 10px; z-index: 50; overflow-y: auto; }
+  .overlay-modal.visible { display: flex; }
+  .modal-card { background: #131c31; border: 2px solid var(--cyan); border-radius: 16px; padding: 14px; max-width: 490px; width: 100%; text-align: center; max-height: 95dvh; overflow-y: auto; }
+  .cta-btn { background: linear-gradient(90deg, var(--cyan), var(--blue)); color: #090d16; border: none; border-radius: 10px; padding: 11px 14px; font-size: 0.92rem; font-weight: 800; cursor: pointer; margin-top: 8px; width: 100%; }
+
+  .mini-report-grid { display: grid; grid-template-columns: 16px repeat(8, 1fr); gap: 2px; margin: 8px auto; font-size: 0.60rem; font-weight: 800; max-width: 240px; }
+  .mini-header-cell { background: #0d1424; color: var(--cyan); display: flex; align-items: center; justify-content: center; padding: 3px 0; border-radius: 3px; }
+  .mini-cell { padding: 4px 0; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+
+  .report-grid { display: grid; grid-template-columns: 24px repeat(8, 1fr); gap: 3px; margin: 8px 0; font-size: 0.72rem; font-weight: 800; }
+  .report-header-cell { background: #0d1424; color: var(--cyan); display: flex; align-items: center; justify-content: center; padding: 5px 0; border-radius: 4px; }
+  .report-cell { padding: 6px 0; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 900; position: relative; }
+  
+  .cell-state-0 { background: #1b263b; color: var(--cyan); border: 1px solid #334669; }
+  .cell-state-1 { background: #ff5252; color: #fff; }
+  .cell-state-2 { background: #ffab00; color: #090d16; }
+  .cell-state-3 { background: #00e676; color: #090d16; }
+  .report-cell.editable { cursor: pointer; border: 1px dashed #fff; }
+
+  .telemetry-box { background: #0d1424; border: 1px solid #263554; border-radius: 10px; padding: 8px 10px; margin-top: 8px; text-align: left; }
+  .telemetry-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; text-align: center; }
+  .telemetry-pill { background: #151f33; border: 1px solid #24324d; border-radius: 8px; padding: 5px 4px; }
+  .rank-chip { display: inline-block; background: #1b263b; border: 1px solid #3b4d71; border-radius: 6px; padding: 2px 6px; font-size: 0.68rem; font-weight: 800; margin: 2px; color: #f0f4f8; }
+
+  .hex-box { background: #090d16; border: 1px solid #334669; border-radius: 10px; padding: 10px; margin-top: 8px; text-align: left; }
+  .hex-input-row { display: flex; gap: 6px; margin-top: 6px; }
+  .hex-input { flex: 1; background: #162035; border: 1.5px solid var(--cyan); color: #fff; border-radius: 8px; padding: 7px 8px; font-family: monospace; font-size: 0.85rem; text-transform: uppercase; outline: none; }
+  .small-btn { background: #23314f; color: #fff; border: 1px solid var(--cyan); border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 0.75rem; cursor: pointer; }
+  .danger-btn { background: #7f1d1d; color: #ff8a80; border: 1px solid var(--red); border-radius: 8px; padding: 7px 10px; font-weight: 700; font-size: 0.78rem; cursor: pointer; width: 100%; margin-top: 10px; }
+  .secondary-btn { background: #1b263b; color: #cbd5e1; border: 1px solid #475569; border-radius: 10px; padding: 9px 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer; width: 100%; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Pantalla de Inicio / Splash Screen -->
+  <div class="splash-screen" id="splashScreen">
+    <div class="splash-title">&#128640; Matemáticas Galiácticas</div>
+    <div class="splash-desc" id="splashDescText">
+      ¡Bienvenido Comandante! Supera los módulos de cálculo para completar tu entrenamiento y activar el potente <strong>Láser Ioánico</strong>.
+    </div>
+    
+    <!-- Cuadro de nombre: visible solo en partida nueva -->
+    <div class="cadet-input-group" id="cadetInputGroup">
+      <label>Nombre del Cadete Estelar:</label>
+      <input type="text" id="cadetNameInput" class="cadet-input" value="" placeholder="Escribe tu nombre..." maxlength="14">
+    </div>
+
+    <div id="splashActionsContainer" style="width:100%; max-width:300px; display:flex; flex-direction:column; gap:6px;">
+      <button class="cta-btn" id="mainSplashBtn" onclick="startMissionFromSplash()">&#128738; Iniciar Misión</button>
+      <button class="secondary-btn" id="newGameSplashBtn" onclick="promptNewGameSplash()" style="background:#7f1d1d; color:#ff8a80; border:1px solid var(--red); display:none;">&#128260; Comenzar Nuevo Juego</button>
+      <button class="secondary-btn" id="migrateToggleBtn" onclick="toggleMigrationBox()">&#128273; Cargar Código de Migración (HEX)</button>
+    </div>
+    
+    <!-- Caja de Confirmación de Nuevo Juego -->
+    <div id="newGameConfirmBox" style="display:none; width:100%; max-width:300px; margin-top:10px; background:#1e1b1b; padding:12px; border-radius:10px; border:1.5px solid var(--red); text-align:center;">
+      <div style="font-size:0.75rem; color:#ff8a80; font-weight:800; margin-bottom:8px;">&#9888;&#65039; ¿Estás seguro de borrar todo el progreso para iniciar de cero?</div>
+      <div style="display:flex; gap:6px;">
+        <button class="small-btn" style="flex:1; background:var(--red); color:#fff;" onclick="executeNewGame()">Sí, Borrar Todo</button>
+        <button class="small-btn" style="flex:1; background:#23314f; color:#fff;" onclick="cancelNewGame()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- Caja Oculta para Migración HEX inicial -->
+    <div id="migrationBox" style="display:none; width:100%; max-width:300px; margin-top:10px; background:#0d1424; padding:10px; border-radius:10px; border:1px solid var(--cyan); text-align:left;">
+      <label style="font-size:0.7rem; color:var(--cyan); font-weight:700; display:block; margin-bottom:3px;">Pega tu Código HEX:</label>
+      <input type="text" id="initialHexInput" class="cadet-input" placeholder="Ej: 00003AF829..." style="font-size:0.8rem; text-transform:uppercase; margin-bottom:6px;">
+      <div id="splashHexError" style="font-size:0.7rem; color:var(--red); margin-bottom:6px; display:none;"></div>
+      <button class="small-btn" style="width:100%; background:var(--cyan); color:#090d16;" onclick="applyInitialHexMigration()">Sincronizar Partida</button>
+    </div>
+  </div>
+
+  <div class="hud">
+    <div class="hud-title" onclick="triggerEasterEgg()">
+      &#128640; Matemáticas Galiácticas
+    </div>
+    <div class="hud-stats">
+      <div class="stat-pill" onclick="openTrophiesModal()" title="Sala de Logros">&#127942; <span id="trophyCountVal">0</span></div>
+      <div class="stat-pill">&#11088; <span id="scoreVal">0</span></div>
+      <div class="stat-pill">&#128293; <span id="streakVal">0</span></div>
+      <button class="gear-btn" onclick="openParentModal()" title="Menú Técnico">
+        &#9881;&#65039;
+      </button>
+    </div>
+  </div>
+
+  <div class="nav-dropdown-bar">
+    <div class="nav-toggle-header" onclick="toggleNavDropdown()">
+      <span id="currentNavLabel">&#127894;&#65039; Nivel 1 — Sector 1</span>
+      <span id="navArrow">&#9660; Cambiar Nivel/Sector</span>
+    </div>
+    <div class="nav-controls collapsed" id="navControls">
+      <select id="levelSelect" class="game-select" onchange="onLevelSelectChange()"></select>
+      <select id="sectorSelect" class="game-select" onchange="onSectorSelectChange()"></select>
+      
+      <!-- Checkbox de Timer en Menú Desplegable -->
+      <div style="grid-column: 1 / -1; background: #162035; border: 1px solid #263554; border-radius: 8px; padding: 6px 10px; display:flex; align-items:center; justify-content:space-between; margin-top: 2px;">
+        <span style="font-size:0.75rem; font-weight:800; color:#ffab00;">&#128293; Modo Desafío (Timer)</span>
+        <input type="checkbox" id="navTimerCheckbox" onchange="onNavTimerCheckboxChange()" style="width:16px; height:16px; accent-color:var(--amber); cursor:pointer;">
+      </div>
+    </div>
+
+    <div class="sector-progress-wrap">
+      <div class="sector-progress-labels">
+        <span id="sectorProgressTitle">Progreso del Sector (Ruta Estelar)</span>
+        <span id="sectorModuleCounter">Módulo 1 / 3</span>
+      </div>
+      <div class="module-segments-bar" id="moduleSegmentsBar"></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="visual-card">
+      <div class="matrix-header">
+        <span id="matrixTitle">Cámara de Plasma Nuclear</span>
+        <button class="rotate-btn" onclick="toggleCommutative()">&#128260; Girar</button>
+      </div>
+      <div class="matrix-grid" id="matrixContainer"></div>
+      <div class="hint-box" id="mnemonicHint"></div>
+    </div>
+
+    <div class="interaction-card" id="interactionCard">
+      <div class="tachometer-widget">
+        <div class="tach-arc-radial">
+          <div class="tach-needle-rocket" id="tachNeedle"></div>
+        </div>
+        <div class="tach-label" id="tachLabel">2.4s PROM</div>
+      </div>
+
+      <div style="width:100%; text-align:left; font-size:0.75rem; font-weight:900; color:var(--cyan); margin-bottom:2px;" id="phaseCleanLabel">
+        Fase 1 - Laboratorio
+      </div>
+
+      <div id="penaltyToastContainer" style="width:100%; min-height:26px;"></div>
+
+      <div class="rep-dots" id="repDotsContainer">
+        <div class="rep-dot" id="dot0"></div>
+        <div class="rep-dot" id="dot1"></div>
+        <div class="rep-dot" id="dot2"></div>
+      </div>
+      <div class="equation-box" id="equationDisplay"></div>
+
+      <div class="options-grid" id="optionsContainer"></div>
+
+      <div class="keypad-grid" id="keypadContainer">
+        <button class="key-btn" onclick="pressDigit('1')">1</button>
+        <button class="key-btn" onclick="pressDigit('2')">2</button>
+        <button class="key-btn" onclick="pressDigit('3')">3</button>
+        <button class="key-btn" onclick="pressDigit('4')">4</button>
+        <button class="key-btn" onclick="pressDigit('5')">5</button>
+        <button class="key-btn" onclick="pressDigit('6')">6</button>
+        <button class="key-btn" onclick="pressDigit('7')">7</button>
+        <button class="key-btn" onclick="pressDigit('8')">8</button>
+        <button class="key-btn" onclick="pressDigit('9')">9</button>
+        <button class="key-btn key-clear" onclick="clearTyped()">&#9003;</button>
+        <button class="key-btn" onclick="pressDigit('0')">0</button>
+        <button class="key-btn key-submit" onclick="submitTyped()">OK &#128640;</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bar">
+    <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:#94a3b8;">
+      <span id="progressText">Progreso de fase</span>
+      <span id="subProgressCount">0 / 0</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressBar"></div>
+    </div>
+  </div>
+
+  <div class="overlay-modal" id="modalOverlay">
+    <div class="modal-card" id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+const AudioFX = {
+  ctx: null,
+  init() {
+    try {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) this.ctx = new AudioCtx();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+    } catch (e) {}
+  },
+  playTone(freq, type, duration, delay = 0, pitchMod = 1) {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      const startTime = this.ctx.currentTime + delay;
+      const stopTime = startTime + duration;
+      osc.frequency.setValueAtTime(freq * pitchMod, startTime);
+      gain.gain.setValueAtTime(0.11, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, stopTime);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.onended = () => {
+        try { osc.disconnect(); gain.disconnect(); } catch (e) {}
+      };
+      osc.start(startTime);
+      osc.stop(stopTime);
+    } catch (e) {}
+  },
+  clockTick() {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      const now = this.ctx.currentTime;
+      osc.frequency.setValueAtTime(900, now);
+      osc.frequency.exponentialRampToValueAtTime(150, now + 0.03);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.onended = () => {
+        try { osc.disconnect(); gain.disconnect(); } catch (e) {}
+      };
+      osc.start(now);
+      osc.stop(now + 0.03);
+    } catch (e) {}
+  },
+  hit(isTurbo = false, streakBonus = 0) {
+    if (isTurbo) {
+      const pitch = 1 + Math.min(0.5, streakBonus * 0.05);
+      this.playTone(659.25, 'triangle', 0.12, 0, pitch);
+      this.playTone(880.00, 'triangle', 0.16, 0.06, pitch);
+      this.playTone(1174.66, 'triangle', 0.22, 0.12, pitch);
+    } else {
+      this.playTone(523.25, 'sine', 0.1, 0);
+      this.playTone(659.25, 'sine', 0.14, 0.07);
+    }
+  },
+  chargeComplete() {
+    this.playTone(440, 'triangle', 0.09, 0);
+    this.playTone(554.37, 'triangle', 0.09, 0.07);
+    this.playTone(659.25, 'triangle', 0.18, 0.14);
+  },
+  error() { this.playTone(220, 'sawtooth', 0.16, 0); this.playTone(174.61, 'sawtooth', 0.22, 0.1); },
+  levelUp() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => this.playTone(f, 'triangle', 0.15, i * 0.08)); }
+};
+
+const CAMPAIGN_LEVELS = [
+  { level: 1, name: "Nivel 1: Cadete Estelar (4 Fases)", startPhase: 1 },
+  { level: 2, name: "Nivel 2: Piloto Astral (Sin Lab)", startPhase: 2 },
+  { level: 3, name: "Nivel 3: Comandante (Misión y Láser Ioánico)", startPhase: 3 },
+  { level: 4, name: "Nivel 4: Leyenda Galiáctica (Solo Láser Ioánico)", startPhase: 4 }
+];
+
+function getTipForPair(a, b) {
+  const min = Math.min(a, b), max = Math.max(a, b);
+  if (min === 2) return `Propulsor de plasma (Doble de ${max}): suma ${max} + ${max} = ${min * max}.`;
+  if (min === 5) return `Salto de isótopos de 5 en 5 (${max} veces): termina en ${max % 2 === 0 ? '0' : '5'} → ${min * max}.`;
+  if (max === 9) return `Truco nuclear del 9: a ${min} réstale 1 (${min - 1}) y completa a 9 (${9 - (min - 1)}) → ${min * max}.`;
+  if (min === 3 && max === 4) return `Secuencia estándar: 1, 2, 3, 4 → 12 = 3 × 4.`;
+  if (min === 3) return `Triple barra de combustible: ${max} + ${max} + ${max} = ${min * max}.`;
+  if (min === 4) return `Doble fusión: el doble de ${max} es ${max * 2}, y su doble es ${min * max}.`;
+  if (min === 6 && max === 6) return `Reactor 36: "Seis por seis, treinta y seis" (36).`;
+  if (min === 7 && max === 7) return `Reactor 49: "Siete por siete, cuarenta y nueve" (49).`;
+  if (min === 8 && max === 8) return `Reactor 64: "Ocho por ocho, sesenta y cuatro" (64).`;
+  if (min === 6 && max === 7) return `5×7 son 35; suma un 7 más: 35 + 7 = 42.`;
+  if (min === 6 && max === 8) return `Rima del reactor: "Seis por ocho, cuarenta y ocho" (48).`;
+  if (min === 7 && max === 8) return `Coordenada de precisión: 5, 6, 7, 8 → 56 = 7 × 8.`;
+  return `Fusión de ${min} filas de ${max} unidades = ${min * max}.`;
+}
+
+const SECTOR_DEFINITIONS = [
+  { id: 0, name: "Sector 1: Fusión 2 y 5", chunkSize: 5, pairs: [[2,2],[2,3],[2,4],[2,5],[2,6],[2,7],[2,8],[2,9],[3,5],[4,5],[5,5],[5,6],[5,7],[5,8],[5,9]] },
+  { id: 1, name: "Sector 2: Fusión 3 y 4", chunkSize: 3, pairs: [[3,3],[3,4],[3,6],[3,7],[3,8],[4,4],[4,6],[4,7],[4,8]] },
+  { id: 2, name: "Sector 3: Isótopos 9 y Gemelos", chunkSize: 3, pairs: [[3,9],[4,9],[6,9],[7,9],[8,9],[9,9],[6,6],[7,7],[8,8]] },
+  { id: 3, name: "Sector 4: Núcleo Crítico 6, 7 y 8", chunkSize: 3, pairs: [[6,7],[6,8],[7,8]] },
+  { id: 4, name: "Sector 5: Órbita de Refuerzo", chunkSize: 4, pairs: [] }
+];
+
+const CANONICAL_PAIRS = [];
+SECTOR_DEFINITIONS.slice(0, 4).forEach(sec => {
+  sec.pairs.forEach(([a, b]) => { CANONICAL_PAIRS.push([Math.min(a, b), Math.max(a, b)]); });
+});
+
+let masteryMap = {};
+let failCountMap = {};
+let sessionErrorTracker = {};
+let successStreakMap = {};
+let pairStatsMap = {}; // Telemetría por par: { emaTime: null, hits: 0, fails: 0 }
+let baselineStats = { locked: false, initialSpeed: null, initialAcc: null, initialCV: null };
+let tapCount = 0;
+let parentEditUnlocked = false;
+let modalTitleTapCount = 0;
+
+let state = {
+  cadetName: '',
+  campaignLevel: 1, sectorIdx: 0, segmentIdx: 0, segments: [],
+  phase: 1, factIdx: 0, repStep: 0, rotated: false, score: 0, streak: 0,
+  quizQueue: [], quizPos: 0, typedValue: '', repairRepsLeft: 0,
+  turboCount: 0, maxStreak: 0, perfectMods: 0, avgSpeed: 2.4,
+  timerStart: 0, timerActive: false, timedownTimer: null, countdownSubTimer: null,
+  transitionTimer: null, inputLocked: false, doubtTriggered: false,
+  timerEnabled: false, allGreenCelebrated: false
+};
+
+function pairKey(a, b) { return `${Math.min(a, b)}x${Math.max(a, b)}`; }
+function getMastery(a, b) { return masteryMap[pairKey(a, b)] ?? 0; }
+function setMastery(a, b, val) { masteryMap[pairKey(a, b)] = Math.max(0, Math.min(3, val)); saveStateToLocalStorage(); }
+
+function getFailCount(a, b) {
+  const k = pairKey(a, b);
+  const st = getMastery(a, b);
+  const baseFails = failCountMap[k] || 0;
+  if (st === 1 || st === 2) return Math.max(baseFails, 2);
+  return baseFails;
+}
+
+function initMasteryMap() {
+  CANONICAL_PAIRS.forEach(([a, b]) => {
+    const k = pairKey(a, b);
+    masteryMap[k] = 0;
+    failCountMap[k] = 0;
+    successStreakMap[k] = 0;
+    pairStatsMap[k] = { emaTime: null, hits: 0, fails: 0 };
+  });
+  baselineStats = { locked: false, initialSpeed: null, initialAcc: null, initialCV: null };
+}
+
+function recordPairTelemetry(a, b, isCorrect, elapsedSec) {
+  const k = pairKey(a, b);
+  if (!pairStatsMap[k]) pairStatsMap[k] = { emaTime: null, hits: 0, fails: 0 };
+  const entry = pairStatsMap[k];
+
+  if (isCorrect) {
+    entry.hits++;
+    if (state.phase > 1) {
+      const clampedT = Math.max(0.4, Math.min(25.0, elapsedSec));
+      entry.emaTime = (entry.emaTime === null)
+        ? Number(clampedT.toFixed(2))
+        : Number((entry.emaTime * 0.65 + clampedT * 0.35).toFixed(2));
+    }
+  } else {
+    entry.fails++;
+  }
+
+  // Fijar línea base automática al alcanzar 15 respuestas evaluadas
+  if (!baselineStats.locked) {
+    const metrics = computeUserMetrics();
+    if (metrics.totalAttempts >= 15 && metrics.evaluatedPairsCount >= 4) {
+      baselineStats.locked = true;
+      baselineStats.initialSpeed = metrics.meanTime;
+      baselineStats.initialAcc = metrics.accuracy;
+      baselineStats.initialCV = metrics.uniformityPct;
+    }
+  }
+}
+
+function computeUserMetrics() {
+  let totalHits = 0, totalFails = 0;
+  const times = [];
+  const rankedPairs = [];
+
+  CANONICAL_PAIRS.forEach(([a, b]) => {
+    const k = pairKey(a, b);
+    const st = pairStatsMap[k] || { emaTime: null, hits: 0, fails: 0 };
+    totalHits += st.hits;
+    totalFails += st.fails;
+    if (st.emaTime !== null && Number.isFinite(st.emaTime)) {
+      times.push(st.emaTime);
+      rankedPairs.push({ a, b, key: k, time: st.emaTime, fails: st.fails, mastery: getMastery(a, b) });
+    }
+  });
+
+  const totalAttempts = totalHits + totalFails;
+  const accuracy = totalAttempts > 0 ? Math.round((totalHits / totalAttempts) * 100) : 100;
+
+  let meanTime = state.avgSpeed;
+  let stdDev = 0;
+  let uniformityPct = 100;
+
+  if (times.length > 0) {
+    meanTime = times.reduce((acc, v) => acc + v, 0) / times.length;
+    if (times.length > 1) {
+      const variance = times.reduce((acc, v) => acc + Math.pow(v - meanTime, 2), 0) / times.length;
+      stdDev = Math.sqrt(variance);
+      const cv = meanTime > 0 ? (stdDev / meanTime) : 0;
+      uniformityPct = Math.max(0, Math.min(100, Math.round((1 - cv) * 100)));
+    }
+  }
+
+  // Ordenar de más lento a más rápido para el Ranking
+  rankedPairs.sort((x, y) => y.time - x.time);
+
+  return {
+    totalAttempts,
+    accuracy,
+    meanTime: Number(meanTime.toFixed(2)),
+    stdDev: Number(stdDev.toFixed(2)),
+    uniformityPct,
+    evaluatedPairsCount: times.length,
+    slowestPairs: rankedPairs.slice(0, 5),
+    allRanked: rankedPairs
+  };
+}
+
+function getReinforcementPriorityScore(a, b) {
+  const k = pairKey(a, b);
+  const m = getMastery(a, b);
+  const fails = getFailCount(a, b);
+  const st = pairStatsMap[k] || { emaTime: null, hits: 0, fails: 0 };
+  const timeWeight = (st.emaTime !== null) ? st.emaTime : state.avgSpeed;
+
+  // Prioridad combinada: Estado (Rojo > Naranja > Azul > Verde) + Fallos + Tiempo en el Ranking
+  let statusPenalty = 0;
+  if (m === 1) statusPenalty = 100;
+  else if (m === 2) statusPenalty = 60;
+  else if (m === 0) statusPenalty = 30;
+
+  return statusPenalty + (fails * 10) + (timeWeight * 3);
+}
+
+function encodeFullStateToHex() {
+  let matrixVal = 0n;
+  for (let i = CANONICAL_PAIRS.length - 1; i >= 0; i--) {
+    const [a, b] = CANONICAL_PAIRS[i];
+    const st = BigInt(getMastery(a, b) & 0x3);
+    matrixVal = (matrixVal << 2n) | st;
+  }
+  const lvlBits = BigInt(Math.max(0, Math.min(3, state.campaignLevel - 1)));
+  const secBits = BigInt(Math.max(0, Math.min(4, state.sectorIdx)));
+  const modBits = BigInt(Math.max(0, Math.min(3, state.segmentIdx)));
+  const turboBits = BigInt(Math.max(0, Math.min(75, state.turboCount)));
+  const streakBits = BigInt(Math.max(0, Math.min(50, state.maxStreak)));
+  const perfBits = BigInt(Math.max(0, Math.min(15, state.perfectMods)));
+  const speedStep = Math.max(0, Math.min(15, Math.round((state.avgSpeed - 0.5) / 1.3)));
+  const speedBits = BigInt(speedStep);
+  const scoreScaled = BigInt(Math.max(0, Math.min(163830, Math.floor(state.score / 10))));
+
+  let packed = matrixVal;
+  packed = (packed << 2n) | lvlBits;
+  packed = (packed << 3n) | secBits;
+  packed = (packed << 2n) | modBits;
+  packed = (packed << 7n) | turboBits;
+  packed = (packed << 6n) | streakBits;
+  packed = (packed << 4n) | perfBits;
+  packed = (packed << 4n) | speedBits;
+  packed = (packed << 14n) | scoreScaled;
+
+  return packed.toString(16).toUpperCase().padStart(26, '0');
+}
+
+function decodeHexToFullState(hexStr) {
+  const clean = (hexStr || '').trim().replace(/[^0-9A-Fa-f]/g, '');
+  if (!clean || clean.length > 30) return false;
+  try {
+    const packed = BigInt('0x' + clean);
+    if (packed < 0n) return false;
+
+    let temp = packed;
+    const scoreScaled = Number(temp & 0x3FFFn); temp >>= 14n;
+    state.score = Math.max(0, scoreScaled * 10);
+
+    const speedStep = Number(temp & 0xFn); temp >>= 4n;
+    state.avgSpeed = Number((0.5 + speedStep * 1.3).toFixed(1));
+    if (isNaN(state.avgSpeed) || state.avgSpeed < 0.5 || state.avgSpeed > 25) state.avgSpeed = 2.4;
+
+    const perfBits = Number(temp & 0xFn); temp >>= 4n;
+    state.perfectMods = Math.max(0, perfBits);
+
+    const streakBits = Number(temp & 0x3Fn); temp >>= 6n;
+    state.maxStreak = Math.max(0, streakBits);
+
+    const turboBits = Number(temp & 0x7Fn); temp >>= 7n;
+    state.turboCount = Math.max(0, turboBits);
+
+    const modBits = Number(temp & 0x3n); temp >>= 2n;
+    state.segmentIdx = Math.max(0, Math.min(3, modBits));
+
+    const secBits = Number(temp & 0x7n); temp >>= 3n;
+    state.sectorIdx = Math.max(0, Math.min(4, secBits));
+
+    const lvlBits = Number(temp & 0x3n); temp >>= 2n;
+    state.campaignLevel = Math.max(1, Math.min(4, lvlBits + 1));
+
+    let matrixVal = temp;
+    for (let i = 0; i < CANONICAL_PAIRS.length; i++) {
+      const [a, b] = CANONICAL_PAIRS[i];
+      const st = Number(matrixVal & 0x3n);
+      const k = pairKey(a, b);
+      masteryMap[k] = (st >= 0 && st <= 3) ? st : 0;
+      failCountMap[k] = (st === 1 || st === 2) ? 2 : 0;
+      successStreakMap[k] = 0;
+      matrixVal >>= 2n;
+    }
+    const allGreenNow = CANONICAL_PAIRS.every(([a, b]) => getMastery(a, b) === 3);
+    state.allGreenCelebrated = allGreenNow;
+    return true;
+  } catch (e) { return false; }
+}
+
+function saveStateToLocalStorage() {
+  try {
+    localStorage.setItem('mat_galiacticas_hex_v41', encodeFullStateToHex());
+    if (state.cadetName) {
+      localStorage.setItem('mat_galiacticas_cadet', state.cadetName);
+    }
+    localStorage.setItem('mat_galiacticas_timer', state.timerEnabled ? '1' : '0');
+    localStorage.setItem('mat_galiacticas_telemetry_v41', JSON.stringify({
+      pairStatsMap,
+      baselineStats
+    }));
+  } catch (e) {}
+}
+
+function loadStateFromLocalStorage() {
+  let loadedHex = false;
+  try {
+    const saved = localStorage.getItem('mat_galiacticas_hex_v41');
+    if (saved && decodeHexToFullState(saved)) {
+      loadedHex = true;
+    } else {
+      for (let v = 40; v >= 7; v--) {
+        const oldSaved = localStorage.getItem(`mat_galiacticas_hex_v${v}`);
+        if (oldSaved && decodeHexToFullState(oldSaved)) {
+          loadedHex = true;
+          break;
+        }
+      }
+    }
+    const savedCadet = (localStorage.getItem('mat_galiacticas_cadet') || '').trim();
+    if (savedCadet) {
+      state.cadetName = savedCadet;
+    }
+    const savedTimer = localStorage.getItem('mat_galiacticas_timer');
+    if (savedTimer !== null) {
+      state.timerEnabled = (savedTimer === '1');
+    }
+    const savedTel = localStorage.getItem('mat_galiacticas_telemetry_v41');
+    if (savedTel) {
+      const parsed = JSON.parse(savedTel);
+      if (parsed && parsed.pairStatsMap) pairStatsMap = parsed.pairStatsMap;
+      if (parsed && parsed.baselineStats) baselineStats = parsed.baselineStats;
+    }
+  } catch (e) {
+    initMasteryMap();
+  }
+  return loadedHex;
+}
+
+function checkSplashState() {
+  const loadedHex = loadStateFromLocalStorage();
+  const totalGreen = CANONICAL_PAIRS.filter(([a, b]) => getMastery(a, b) === 3).length;
+  const anyProgress = loadedHex && (totalGreen > 0 || state.score > 0 || state.sectorIdx > 0 || state.campaignLevel > 1);
+
+  const inputGroup = document.getElementById('cadetInputGroup');
+  const nameInput = document.getElementById('cadetNameInput');
+  const newGameBtn = document.getElementById('newGameSplashBtn');
+  const mainBtn = document.getElementById('mainSplashBtn');
+  const descText = document.getElementById('splashDescText');
+
+  if (anyProgress && state.cadetName) {
+    inputGroup.style.display = 'none';
+    newGameBtn.style.display = 'block';
+    descText.innerHTML = `
+      ¡Bienvenido de nuevo, Comandante <strong>${state.cadetName}</strong>!<br>
+      &#127894;&#65039; Nivel ${state.campaignLevel} | Sector ${state.sectorIdx + 1} | &#128681; Conquista: ${totalGreen}/36
+    `;
+    mainBtn.innerHTML = `&#128640; Continuar Misión (${state.cadetName})`;
+  } else if (anyProgress && !state.cadetName) {
+    inputGroup.style.display = 'block';
+    nameInput.value = '';
+    newGameBtn.style.display = 'block';
+    descText.innerHTML = `
+      Partida detectada: &#127894;&#65039; Nivel ${state.campaignLevel} | Sector ${state.sectorIdx + 1} | &#128681; Conquista: ${totalGreen}/36<br>
+      Ingresa tu nombre de Comandante para continuar:
+    `;
+    mainBtn.innerHTML = `&#128640; Continuar Misión`;
+  } else {
+    inputGroup.style.display = 'block';
+    nameInput.value = '';
+    newGameBtn.style.display = 'none';
+    descText.innerHTML = `
+      ¡Bienvenido Comandante! Supera los módulos de cálculo para completar tu entrenamiento y activar el potente <strong>Láser Ioánico</strong>.
+    `;
+    mainBtn.innerHTML = `&#128738; Iniciar Misión`;
+  }
+
+  document.getElementById('navTimerCheckbox').checked = state.timerEnabled;
+  updateTrophyCount();
+}
+
+function startMissionFromSplash() {
+  const inputGroup = document.getElementById('cadetInputGroup');
+  const nameInput = document.getElementById('cadetNameInput');
+
+  if (inputGroup.style.display !== 'none') {
+    const inputVal = nameInput.value.trim();
+    if (!inputVal) {
+      nameInput.classList.add('input-error');
+      nameInput.focus();
+      AudioFX.error();
+      return;
+    }
+    nameInput.classList.remove('input-error');
+    state.cadetName = inputVal;
+  } else if (!state.cadetName) {
+    state.cadetName = 'Comandante';
+  }
+
+  saveStateToLocalStorage();
+  document.getElementById('splashScreen').classList.add('hidden');
+  AudioFX.levelUp();
+  populateDropdowns();
+  loadSector(state.sectorIdx, state.segmentIdx, true);
+}
+
+function promptNewGameSplash() {
+  document.getElementById('newGameConfirmBox').style.display = 'block';
+  document.getElementById('splashActionsContainer').style.display = 'none';
+}
+
+function cancelNewGame() {
+  document.getElementById('newGameConfirmBox').style.display = 'none';
+  document.getElementById('splashActionsContainer').style.display = 'flex';
+}
+
+function executeNewGame() {
+  clearAllTimers();
+  try {
+    localStorage.removeItem('mat_galiacticas_hex_v41');
+    for (let v = 40; v >= 7; v--) localStorage.removeItem(`mat_galiacticas_hex_v${v}`);
+    localStorage.removeItem('mat_galiacticas_cadet');
+    localStorage.removeItem('mat_galiacticas_timer');
+    localStorage.removeItem('mat_galiacticas_telemetry_v41');
+  } catch (e) {}
+
+  state.cadetName = '';
+  state.score = 0;
+  state.streak = 0;
+  state.campaignLevel = 1;
+  state.sectorIdx = 0;
+  state.segmentIdx = 0;
+  state.turboCount = 0;
+  state.maxStreak = 0;
+  state.perfectMods = 0;
+  state.avgSpeed = 2.4;
+  state.timerEnabled = false;
+  state.allGreenCelebrated = false;
+  initMasteryMap();
+
+  document.getElementById('newGameConfirmBox').style.display = 'none';
+  document.getElementById('splashActionsContainer').style.display = 'flex';
+  checkSplashState();
+  document.getElementById('cadetNameInput').focus();
+}
+
+function toggleMigrationBox() {
+  const box = document.getElementById('migrationBox');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+function applyInitialHexMigration() {
+  const hexVal = document.getElementById('initialHexInput').value.trim();
+  const errEl = document.getElementById('splashHexError');
+  const inputGroup = document.getElementById('cadetInputGroup');
+  const nameInput = document.getElementById('cadetNameInput');
+
+  if (inputGroup.style.display !== 'none') {
+    const inputName = nameInput.value.trim();
+    if (inputName) state.cadetName = inputName;
+  }
+
+  if (decodeHexToFullState(hexVal)) {
+    if (errEl) errEl.style.display = 'none';
+    if (!state.cadetName) {
+      inputGroup.style.display = 'block';
+      const typed = nameInput.value.trim();
+      if (!typed) {
+        checkSplashState();
+        nameInput.classList.add('input-error');
+        nameInput.focus();
+        return;
+      }
+      state.cadetName = typed;
+    }
+    saveStateToLocalStorage();
+    AudioFX.levelUp();
+    document.getElementById('splashScreen').classList.add('hidden');
+    populateDropdowns();
+    loadSector(state.sectorIdx, state.segmentIdx, true);
+  } else {
+    AudioFX.error();
+    if (errEl) {
+      errEl.textContent = '✖ Código HEX inválido.';
+      errEl.style.display = 'block';
+    }
+  }
+}
+
+function shuffleArray(arr) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function createFactObject(a, b) {
+  const na = Number(a) || 2;
+  const nb = Number(b) || 2;
+  const swap = Math.random() > 0.5;
+  return { a: swap ? nb : na, b: swap ? na : nb, tip: getTipForPair(na, nb) };
+}
+
+function buildRandomModulesForSector(sectorIdx) {
+  const safeIdx = Math.max(0, Math.min(SECTOR_DEFINITIONS.length - 1, Number(sectorIdx) || 0));
+  const sec = SECTOR_DEFINITIONS[safeIdx];
+  let selectedPairs = [];
+
+  if (safeIdx === 4) {
+    // Sector 5 (Órbita de Refuerzo): Prioriza celdas Rojas/Naranjas + las más lentas del Ranking de velocidad
+    const allSortedByNeed = [...CANONICAL_PAIRS].sort((p1, p2) => {
+      return getReinforcementPriorityScore(p2[0], p2[1]) - getReinforcementPriorityScore(p1[0], p1[1]);
+    });
+    const urgentCount = CANONICAL_PAIRS.filter(([a, b]) => getMastery(a, b) === 1 || getMastery(a, b) === 2).length;
+    const targetCount = Math.max(12, Math.min(20, Math.ceil(Math.max(12, urgentCount + 4) / sec.chunkSize) * sec.chunkSize));
+    selectedPairs = allSortedByNeed.slice(0, targetCount);
+  } else if (safeIdx === 3) {
+    // Sector 4: combina núcleo 6,7,8 con las 3 tablas más lentas o difíciles del usuario
+    const poolExtras = [[6,6],[7,7],[8,8],[6,9],[7,9],[8,9],[4,7],[4,8]];
+    poolExtras.sort((p1, p2) => getReinforcementPriorityScore(p2[0], p2[1]) - getReinforcementPriorityScore(p1[0], p1[1]));
+    selectedPairs = shuffleArray([...sec.pairs, ...poolExtras.slice(0, 3)]);
+  } else {
+    const unmastered = shuffleArray(sec.pairs.filter(([a, b]) => getMastery(a, b) < 3));
+    const masteredSortedBySlowest = sec.pairs
+      .filter(([a, b]) => getMastery(a, b) === 3)
+      .sort((p1, p2) => getReinforcementPriorityScore(p2[0], p2[1]) - getReinforcementPriorityScore(p1[0], p1[1]));
+    selectedPairs = [...unmastered, ...masteredSortedBySlowest];
+  }
+
+  const chunks = [];
+  for (let i = 0; i < selectedPairs.length; i += sec.chunkSize) {
+    chunks.push(shuffleArray(selectedPairs.slice(i, i + sec.chunkSize)).map(([a, b]) => createFactObject(a, b)));
+  }
+  return chunks.length > 0 ? chunks : [[createFactObject(2, 2)]];
+}
+
+function getStartPhaseForCurrentLevel() {
+  const found = CAMPAIGN_LEVELS.find(l => l.level === state.campaignLevel);
+  return found ? found.startPhase : 1;
+}
+
+function initGame() {
+  initMasteryMap();
+  checkSplashState();
+  populateDropdowns();
+
+  window.addEventListener('keydown', (e) => {
+    if (state.phase !== 4 || state.inputLocked) return;
+    if (document.getElementById('modalOverlay').classList.contains('visible')) return;
+    if (!document.getElementById('splashScreen').classList.contains('hidden')) return;
+    if (e.key >= '0' && e.key <= '9') pressDigit(e.key);
+    else if (e.key === 'Backspace') clearTyped();
+    else if (e.key === 'Enter') submitTyped();
+  });
+}
+
+function triggerEasterEgg() {
+  tapCount++;
+  AudioFX.hit();
+  if (tapCount >= 3) {
+    tapCount = 0;
+    AudioFX.levelUp();
+    const hint = document.getElementById('mnemonicHint');
+    const nameStr = state.cadetName || 'Comandante';
+    if (hint) hint.innerHTML = `&#127775; <strong>¡Radar Activo, ${nameStr}!</strong> Los reactores de fusión brillan al máximo.`;
+  }
+}
+
+function toggleNavDropdown() {
+  const nav = document.getElementById('navControls');
+  const collapsed = nav.classList.toggle('collapsed');
+  document.getElementById('navArrow').textContent = collapsed ? '▼ Cambiar Nivel/Sector' : '▲ Ocultar';
+}
+
+function populateDropdowns() {
+  const lvlSel = document.getElementById('levelSelect');
+  lvlSel.innerHTML = '';
+  CAMPAIGN_LEVELS.forEach(l => {
+    const opt = document.createElement('option'); opt.value = l.level; opt.textContent = l.name; lvlSel.appendChild(opt);
+  });
+  lvlSel.value = state.campaignLevel;
+
+  const secSel = document.getElementById('sectorSelect');
+  secSel.innerHTML = '';
+  SECTOR_DEFINITIONS.forEach((sec, idx) => {
+    const opt = document.createElement('option'); opt.value = idx; opt.textContent = sec.name; secSel.appendChild(opt);
+  });
+  secSel.value = state.sectorIdx;
+  document.getElementById('navTimerCheckbox').checked = state.timerEnabled;
+}
+
+function onLevelSelectChange() {
+  state.campaignLevel = parseInt(document.getElementById('levelSelect').value, 10) || 1;
+  saveStateToLocalStorage();
+  loadSector(state.sectorIdx, 0, true);
+  document.getElementById('navControls').classList.add('collapsed');
+  document.getElementById('navArrow').textContent = '▼ Cambiar Nivel/Sector';
+}
+
+function onSectorSelectChange() {
+  loadSector(parseInt(document.getElementById('sectorSelect').value, 10) || 0, 0, true);
+  document.getElementById('navControls').classList.add('collapsed');
+  document.getElementById('navArrow').textContent = '▼ Cambiar Nivel/Sector';
+}
+
+function onNavTimerCheckboxChange() {
+  state.timerEnabled = document.getElementById('navTimerCheckbox').checked;
+  saveStateToLocalStorage();
+  if (!state.timerEnabled) {
+    clearActiveTimer();
+  } else {
+    startTimerForQuestion();
+  }
+}
+
+function renderSectorProgressBar() {
+  const bar = document.getElementById('moduleSegmentsBar');
+  bar.innerHTML = '';
+  const totalMods = Math.max(1, state.segments.length);
+  for (let i = 0; i < totalMods; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'mod-seg' + (i < state.segmentIdx ? ' done' : (i === state.segmentIdx ? ' active' : ''));
+    bar.appendChild(seg);
+  }
+  const secDef = SECTOR_DEFINITIONS[state.sectorIdx] || SECTOR_DEFINITIONS[0];
+  document.getElementById('sectorModuleCounter').textContent = `Módulo ${state.segmentIdx + 1} de ${totalMods}`;
+  document.getElementById('currentNavLabel').textContent = `🎖️ Nivel ${state.campaignLevel} — ${secDef.name}`;
+}
+
+function clearAllTimers() {
+  clearActiveTimer();
+  if (state.transitionTimer) {
+    clearTimeout(state.transitionTimer);
+    state.transitionTimer = null;
+  }
+}
+
+function scheduleStageTransition(fn, delayMs) {
+  if (state.transitionTimer) clearTimeout(state.transitionTimer);
+  state.transitionTimer = setTimeout(() => {
+    state.transitionTimer = null;
+    fn();
+  }, delayMs);
+}
+
+function loadSector(sectorIdx, segmentIdx = 0, rebuild = true) {
+  clearAllTimers();
+  state.inputLocked = false;
+  state.sectorIdx = Math.max(0, Math.min(SECTOR_DEFINITIONS.length - 1, Number(sectorIdx) || 0));
+  if (rebuild || !Array.isArray(state.segments) || state.segments.length === 0) {
+    state.segments = buildRandomModulesForSector(state.sectorIdx);
+  }
+  state.segmentIdx = Math.max(0, Math.min(Number(segmentIdx) || 0, state.segments.length - 1));
+
+  const startPhase = getStartPhaseForCurrentLevel();
+  state.phase = startPhase;
+  state.factIdx = 0; state.repStep = 0; state.rotated = false; state.typedValue = '';
+  sessionErrorTracker = {};
+
+  document.getElementById('levelSelect').value = state.campaignLevel;
+  document.getElementById('sectorSelect').value = state.sectorIdx;
+  renderSectorProgressBar();
+
+  if (startPhase > 1) startPhaseQueue(startPhase);
+  else renderStage();
+}
+
+function getCurrentSegmentFacts() {
+  if (!Array.isArray(state.segments) || state.segments.length === 0) {
+    state.segments = buildRandomModulesForSector(state.sectorIdx);
+  }
+  state.segmentIdx = Math.max(0, Math.min(state.segmentIdx, state.segments.length - 1));
+  return state.segments[state.segmentIdx] || [createFactObject(2, 2)];
+}
+
+function getCurrentFact() {
+  const segFacts = getCurrentSegmentFacts();
+  if (state.phase === 1) {
+    if (state.factIdx < 0 || state.factIdx >= segFacts.length) state.factIdx = 0;
+    return segFacts[state.factIdx] || createFactObject(2, 2);
+  } else {
+    if (!Array.isArray(state.quizQueue) || state.quizQueue.length === 0) {
+      const duplicate = (state.phase <= 3 || state.campaignLevel === 4);
+      state.quizQueue = shuffleArray(duplicate ? [...segFacts, ...segFacts] : [...segFacts]).map(f => createFactObject(f.a, f.b));
+      state.quizPos = 0;
+    }
+    if (state.quizPos < 0 || state.quizPos >= state.quizQueue.length) {
+      state.quizPos = Math.max(0, state.quizQueue.length - 1);
+    }
+    return state.quizQueue[state.quizPos] || createFactObject(2, 2);
+  }
+}
+
+function updateHUD() {
+  document.getElementById('scoreVal').textContent = state.score;
+  document.getElementById('streakVal').textContent = state.streak;
+  updateTrophyCount();
+  updateTachometerDisplay();
+}
+
+function updateTachometerDisplay() {
+  const needle = document.getElementById('tachNeedle');
+  const label = document.getElementById('tachLabel');
+  if (!needle || !label) return;
+
+  label.textContent = `${state.avgSpeed.toFixed(1)}s PROM`;
+  const clamped = Math.max(0.5, Math.min(20.0, state.avgSpeed));
+  const ratio = (20.0 - clamped) / 19.5;
+  const deg = Math.round(-90 + (ratio * 180));
+  needle.style.transform = `rotate(${deg}deg)`;
+}
+
+function toggleCommutative() {
+  if (state.inputLocked) return;
+  state.rotated = !state.rotated;
+  AudioFX.hit();
+  renderMatrix(getCurrentFact());
+}
+
+function renderMatrix(fact) {
+  if (!fact) return;
+  const rows = state.rotated ? fact.b : fact.a;
+  const cols = state.rotated ? fact.a : fact.b;
+  const container = document.getElementById('matrixContainer');
+  container.innerHTML = '';
+
+  const hideAnswerInMatrix = state.phase >= 3;
+  document.getElementById('matrixTitle').textContent = hideAnswerInMatrix
+    ? `Reactor Nuclear: ${rows} filas × ${cols} unidades = ?`
+    : `Reactor Nuclear: ${rows} filas × ${cols} unidades = ${fact.a * fact.b}`;
+
+  for (let r = 1; r <= rows; r++) {
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'matrix-row';
+    for (let c = 1; c <= cols; c++) {
+      const cell = document.createElement('div'); cell.className = 'energy-cell'; rowDiv.appendChild(cell);
+    }
+    if (!hideAnswerInMatrix) {
+      const badge = document.createElement('span'); badge.className = 'row-sum-badge'; badge.textContent = r * cols; rowDiv.appendChild(badge);
+    }
+    container.appendChild(rowDiv);
+  }
+
+  document.getElementById('mnemonicHint').innerHTML = hideAnswerInMatrix
+    ? `&#9889; <strong>Alerta de Asteroide:</strong> Calcula la unidad de combustible antes del impacto.`
+    : `&#128161; <strong>Tip de Navegación:</strong> ${fact.tip}`;
+}
+
+function generateOptions(correct, a, b) {
+  const cor = Number(correct) || 4;
+  const na = Number(a) || 2;
+  const nb = Number(b) || 2;
+  const set = new Set([cor]);
+  const candidates = [
+    cor + na, cor - na, cor + nb, cor - nb,
+    (na + 1) * nb, na * (nb + 1), cor + 2, cor - 2
+  ].filter(n => Number.isFinite(n) && n > 1 && n !== cor);
+
+  while (set.size < 4 && candidates.length > 0) {
+    const idx = Math.floor(Math.random() * candidates.length);
+    set.add(candidates.splice(idx, 1)[0]);
+  }
+  let fallbackOffset = 1;
+  while (set.size < 4 && fallbackOffset < 50) {
+    const candidate = cor + fallbackOffset;
+    if (candidate > 1 && candidate !== cor) set.add(candidate);
+    fallbackOffset++;
+  }
+  return shuffleArray(Array.from(set));
+}
+
+function startTimerForQuestion() {
+  clearActiveTimer();
+  
+  if (!document.getElementById('splashScreen').classList.contains('hidden') || 
+      document.getElementById('modalOverlay').classList.contains('visible')) {
+    return;
+  }
+
+  state.timerStart = Date.now();
+  state.timerActive = true;
+  state.doubtTriggered = false;
+
+  if (state.phase === 1 || !state.timerEnabled) return; 
+
+  const gracePeriod = (state.phase === 2) ? 4000 : 2000;
+
+  state.timedownTimer = setTimeout(() => {
+    if (!state.timerActive || document.getElementById('modalOverlay').classList.contains('visible') || !state.timerEnabled) return;
+    state.doubtTriggered = true;
+    
+    let count = 3;
+    const cardEl = document.getElementById('interactionCard');
+
+    const showNumber = () => {
+      if (!state.timerActive || !state.doubtTriggered || document.getElementById('modalOverlay').classList.contains('visible') || !state.timerEnabled) return;
+      if (count > 0) {
+        AudioFX.clockTick();
+        
+        const oldNum = cardEl.querySelector('.timedown-number');
+        if (oldNum) oldNum.remove();
+
+        const numEl = document.createElement('div');
+        numEl.className = 'timedown-number';
+        numEl.textContent = count;
+        cardEl.appendChild(numEl);
+
+        count--;
+        state.countdownSubTimer = setTimeout(showNumber, 900);
+      } else {
+        const oldNum = cardEl.querySelector('.timedown-number');
+        if (oldNum) oldNum.remove();
+        
+        const toastContainer = document.getElementById('penaltyToastContainer');
+        if (toastContainer && !toastContainer.querySelector('.penalty-toast')) {
+          const penalty = document.createElement('div');
+          penalty.className = 'penalty-toast';
+          penalty.innerHTML = '&#9888;&#65039; ¡Tiempo agotado!<br>Responde para rescatar el sector.';
+          toastContainer.appendChild(penalty);
+        }
+      }
+    };
+    showNumber();
+
+  }, gracePeriod);
+}
+
+function clearActiveTimer() {
+  state.timerActive = false;
+  if (state.timedownTimer) {
+    clearTimeout(state.timedownTimer);
+    state.timedownTimer = null;
+  }
+  if (state.countdownSubTimer) {
+    clearTimeout(state.countdownSubTimer);
+    state.countdownSubTimer = null;
+  }
+  const cardEl = document.getElementById('interactionCard');
+  if (cardEl) {
+    const oldNum = cardEl.querySelector('.timedown-number');
+    if (oldNum) oldNum.remove();
+  }
+  const toastContainer = document.getElementById('penaltyToastContainer');
+  if (toastContainer) {
+    toastContainer.innerHTML = '';
+  }
+}
+
+function renderStage() {
+  state.inputLocked = false;
+  updateHUD();
+  renderSectorProgressBar();
+
+  const segFacts = getCurrentSegmentFacts();
+  const fact = getCurrentFact();
+  const ans = fact.a * fact.b;
+
+  renderMatrix(fact);
+  startTimerFormModalSafeTimer();
+
+  const phaseNames = ["Fase 1 - Laboratorio", "Fase 2 - Práctica", "Fase 3 - Misión", "Fase 4 - Láser Ioánico"];
+  const cleanLabelEl = document.getElementById('phaseCleanLabel');
+  if (cleanLabelEl) cleanLabelEl.textContent = phaseNames[state.phase - 1] || `Fase ${state.phase}`;
+
+  const dotsContainer = document.getElementById('repDotsContainer');
+  const eqBox = document.getElementById('equationDisplay');
+  const optContainer = document.getElementById('optionsContainer');
+  const keypadContainer = document.getElementById('keypadContainer');
+
+  const first = state.rotated ? fact.b : fact.a;
+  const second = state.rotated ? fact.a : fact.b;
+
+  if (state.phase === 1) {
+    dotsContainer.style.display = 'flex'; optContainer.style.display = 'grid'; keypadContainer.style.display = 'none';
+    for (let i = 0; i < 3; i++) document.getElementById('dot' + i).className = 'rep-dot' + (i < state.repStep ? ' filled' : '');
+
+    if (state.repStep === 0) {
+      eqBox.innerHTML = `${first} × ${second} = <span class="eq-answer">${ans}</span>`;
+    } else if (state.repStep === 1) {
+      eqBox.innerHTML = `${first} × ${second} = <span class="eq-answer faded">${ans}</span>`;
+    } else {
+      eqBox.innerHTML = `${first} × ${second} = <span class="eq-answer hidden">?</span>`;
+    }
+    updateProgressBar(state.factIdx * 3 + state.repStep, segFacts.length * 3, `Unidad ${state.factIdx + 1} de ${segFacts.length}`);
+  } else if (state.phase === 2 || state.phase === 3) {
+    dotsContainer.style.display = 'none'; optContainer.style.display = 'grid'; keypadContainer.style.display = 'none';
+    eqBox.innerHTML = `${first} × ${second} = <span class="eq-answer hidden">?</span>`;
+    updateProgressBar(state.quizPos, state.quizQueue.length, `Pregunta ${state.quizPos + 1} de ${state.quizQueue.length}`);
+  } else {
+    dotsContainer.style.display = 'none'; optContainer.style.display = 'none'; keypadContainer.style.display = 'grid';
+    eqBox.innerHTML = `${first} × ${second} = <span class="eq-answer" id="typedDisplay">${state.typedValue === '' ? '?' : state.typedValue}</span>`;
+    updateProgressBar(state.quizPos, state.quizQueue.length, `Disparo ${state.quizPos + 1} de ${state.quizQueue.length}`);
+  }
+
+  if (state.phase <= 3) {
+    optContainer.innerHTML = '';
+    generateOptions(ans, fact.a, fact.b).forEach(val => {
+      const btn = document.createElement('button'); btn.className = 'opt-btn'; btn.textContent = val;
+      btn.onclick = () => processAttempt(val, ans, btn, fact);
+      optContainer.appendChild(btn);
+    });
+  }
+}
+
+function startTimerFormModalSafeTimer() {
+  if (!document.getElementById('splashScreen').classList.contains('hidden') ||
+      document.getElementById('modalOverlay').classList.contains('visible')) {
+    return;
+  }
+  startTimerForQuestion();
+}
+
+function pressDigit(d) {
+  if (state.inputLocked) return;
+  if (state.typedValue.length < 3) {
+    state.typedValue += d;
+    AudioFX.playTone(600, 'sine', 0.05, 0);
+    const el = document.getElementById('typedDisplay');
+    if (el) el.textContent = state.typedValue;
+  }
+}
+function clearTyped() {
+  if (state.inputLocked) return;
+  state.typedValue = state.typedValue.slice(0, -1);
+  const el = document.getElementById('typedDisplay');
+  if (el) el.textContent = state.typedValue === '' ? '?' : state.typedValue;
+}
+function submitTyped() {
+  if (state.inputLocked || state.typedValue === '') return;
+  const fact = getCurrentFact();
+  const val = parseInt(state.typedValue, 10);
+  state.typedValue = '';
+  processAttempt(val, fact.a * fact.b, null, fact);
+}
+
+function updateProgressBar(current, total, label) {
+  const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressText').textContent = label;
+  document.getElementById('subProgressCount').textContent = `${current} / ${total}`;
+}
+
+function processAttempt(selected, correct, btnElement, fact) {
+  if (state.inputLocked) return;
+  state.inputLocked = true;
+  clearActiveTimer();
+
+  let elapsedSec = (Date.now() - state.timerStart) / 1000;
+  if (elapsedSec < 0 || elapsedSec > 300) elapsedSec = 20;
+  
+  const segFacts = getCurrentSegmentFacts();
+  const key = pairKey(fact.a, fact.b);
+
+  if (selected === correct) {
+    if (btnElement) btnElement.classList.add('correct');
+    
+    state.avgSpeed = Number((state.avgSpeed * 0.7 + elapsedSec * 0.3).toFixed(1));
+    recordPairTelemetry(fact.a, fact.b, true, elapsedSec);
+    
+    const turboThreshold = (state.phase === 4) ? 3.5 : 2.0;
+    const isTurbo = (!state.doubtTriggered && elapsedSec <= turboThreshold);
+
+    if (isTurbo) {
+      state.turboCount++;
+      showTurboToast();
+      AudioFX.hit(true, state.streak);
+    } else {
+      AudioFX.hit(false);
+    }
+
+    state.streak++;
+    if (state.streak > state.maxStreak) state.maxStreak = state.streak;
+    state.score += 10 + state.streak * 2 + (isTurbo ? 15 : 0);
+
+    if (state.phase === 1) {
+      state.repStep++;
+      if (state.repStep < 3) {
+        saveStateToLocalStorage();
+        scheduleStageTransition(renderStage, 210);
+      } else {
+        AudioFX.chargeComplete();
+        if (getMastery(fact.a, fact.b) === 0) setMastery(fact.a, fact.b, 2);
+        else saveStateToLocalStorage();
+        state.repStep = 0; state.factIdx++;
+        if (state.factIdx < segFacts.length) scheduleStageTransition(renderStage, 280);
+        else scheduleStageTransition(() => startPhaseQueue(2), 320);
+      }
+    } else {
+      const currentM = getMastery(fact.a, fact.b);
+      const errs = sessionErrorTracker[key] || 0;
+
+      successStreakMap[key] = (successStreakMap[key] || 0) + 1;
+
+      if (successStreakMap[key] >= 3) {
+        if (currentM === 1) setMastery(fact.a, fact.b, 2);
+        else if (currentM === 2 || currentM === 0) setMastery(fact.a, fact.b, 3);
+        successStreakMap[key] = 0;
+        failCountMap[key] = 0;
+      } else if (state.phase === 4 && errs === 0 && !(state.doubtTriggered && state.timerEnabled)) {
+        if (currentM === 0 || currentM === 2) {
+          setMastery(fact.a, fact.b, 3);
+          failCountMap[key] = 0;
+        } else {
+          saveStateToLocalStorage();
+        }
+      } else {
+        saveStateToLocalStorage();
+      }
+
+      state.quizPos++;
+      if (state.quizPos < state.quizQueue.length) {
+        state.rotated = Math.random() > 0.5;
+        scheduleStageTransition(renderStage, 240);
+      } else {
+        if (state.phase < 4) scheduleStageTransition(() => startPhaseQueue(state.phase + 1), 320);
+        else scheduleStageTransition(completeModule, 260);
+      }
+    }
+  } else {
+    if (btnElement) btnElement.classList.add('wrong');
+    AudioFX.error(); state.streak = 0;
+    recordPairTelemetry(fact.a, fact.b, false, elapsedSec);
+    
+    successStreakMap[key] = 0;
+
+    const currentM = getMastery(fact.a, fact.b);
+    
+    if (currentM === 3 || currentM === 0) {
+      setMastery(fact.a, fact.b, 2);
+    } else {
+      setMastery(fact.a, fact.b, 1);
+    }
+    state.allGreenCelebrated = false;
+
+    if (state.phase === 1) {
+      state.repStep = 0;
+      scheduleStageTransition(renderStage, 420);
+    } else {
+      sessionErrorTracker[key] = (sessionErrorTracker[key] || 0) + 1;
+      failCountMap[key] = (failCountMap[key] || 0) + 1;
+      state.quizQueue.push(createFactObject(fact.a, fact.b));
+      scheduleStageTransition(() => triggerRepairModal(fact), 280);
+    }
+  }
+}
+
+function showTurboToast() {
+  const card = document.getElementById('interactionCard');
+  if (!card) return;
+  const existing = card.querySelector('.turbo-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'turbo-toast';
+  toast.textContent = '⚡ TURBO +15';
+  card.appendChild(toast);
+  setTimeout(() => toast.remove(), 400);
+}
+
+function startPhaseQueue(nextPhase) {
+  clearAllTimers();
+  const segFacts = getCurrentSegmentFacts();
+  state.phase = nextPhase; state.quizPos = 0; state.typedValue = '';
+  const duplicate = (nextPhase <= 3 || state.campaignLevel === 4);
+  state.quizQueue = shuffleArray(duplicate ? [...segFacts, ...segFacts] : [...segFacts]).map(f => createFactObject(f.a, f.b));
+  AudioFX.levelUp();
+  renderStage();
+}
+
+function triggerRepairModal(fact) {
+  clearAllTimers();
+  const modal = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+  const ans = fact.a * fact.b;
+  state.repairRepsLeft = 2;
+
+  function renderRepair() {
+    content.innerHTML = `
+      <h3 style="margin:0 0 8px 0;color:var(--amber);">&#128295; Recarga de Unidad Nuclear</h3>
+      <p style="font-size:0.84rem;color:#cbd5e1;margin:0 0 8px 0;">Presiona la respuesta <strong>${state.repairRepsLeft} veces más</strong>:</p>
+      <div style="font-size:2.2rem;font-weight:900;margin:8px 0;color:var(--cyan);">${fact.a} × ${fact.b} = ${ans}</div>
+      <div class="hint-box" style="margin-bottom:12px;">&#128161; ${fact.tip}</div>
+      <button class="cta-btn" id="repairBtn">&#9889; Confirmar</button>
+    `;
+    document.getElementById('repairBtn').onclick = () => {
+      AudioFX.hit(); state.repairRepsLeft--;
+      if (state.repairRepsLeft > 0) renderRepair();
+      else { modal.classList.remove('visible'); renderStage(); }
+    };
+  }
+  renderRepair();
+  modal.classList.add('visible');
+}
+
+function advanceAfterModule() {
+  const modal = document.getElementById('modalOverlay');
+  modal.classList.remove('visible');
+  const hasNextModule = state.segmentIdx + 1 < state.segments.length;
+  const isLastSector = state.sectorIdx === SECTOR_DEFINITIONS.length - 1;
+
+  if (hasNextModule) {
+    loadSector(state.sectorIdx, state.segmentIdx + 1, false);
+  } else if (!isLastSector) {
+    loadSector(state.sectorIdx + 1, 0, true);
+  } else {
+    if (state.campaignLevel < 4) state.campaignLevel++;
+    saveStateToLocalStorage();
+    populateDropdowns();
+    loadSector(0, 0, true);
+  }
+}
+
+function completeModule() {
+  clearAllTimers();
+  state.inputLocked = false;
+  AudioFX.levelUp();
+  
+  if (Object.keys(sessionErrorTracker).length === 0) {
+    state.perfectMods++;
+  }
+  saveStateToLocalStorage();
+
+  const modal = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+  const hasNextModule = state.segmentIdx + 1 < state.segments.length;
+  const isLastSector = state.sectorIdx === SECTOR_DEFINITIONS.length - 1;
+  const currentHex = encodeFullStateToHex();
+  const allGreen = CANONICAL_PAIRS.every(([a, b]) => getMastery(a, b) === 3);
+
+  let miniGridHTML = `<div class="mini-report-grid"><div class="mini-header-cell">×</div>`;
+  for (let c = 2; c <= 9; c++) miniGridHTML += `<div class="mini-header-cell">${c}</div>`;
+  for (let r = 2; r <= 9; r++) {
+    miniGridHTML += `<div class="mini-header-cell">${r}</div>`;
+    for (let c = 2; c <= 9; c++) {
+      const st = getMastery(r, c);
+      miniGridHTML += `<div class="mini-cell cell-state-${st}">${r*c}</div>`;
+    }
+  }
+  miniGridHTML += `</div>`;
+
+  const totalGreenCount = CANONICAL_PAIRS.filter(([a, b]) => getMastery(a, b) === 3).length;
+  const displayCadet = state.cadetName || 'Comandante';
+
+  if (allGreen && !state.allGreenCelebrated) {
+    state.allGreenCelebrated = true;
+    content.innerHTML = `
+      <h3 style="margin:0 0 6px 0;color:var(--green);">&#127775; ¡MISIÓN CUMPLIDA! &#127775;</h3>
+      <p style="font-size:0.84rem;color:#cbd5e1;">¡Increíble, ${displayCadet}! Has sincronizado el 100% del tablero de color verde. ¡Eres una Leyenda Galiáctica!</p>
+      ${miniGridHTML}
+      <div class="hex-box" style="text-align:center;">
+        <div style="font-size:0.72rem;color:#94a3b8;">Código HEX Definitivo:</div>
+        <div style="font-family:monospace;font-size:0.9rem;font-weight:900;color:var(--cyan);">${currentHex}</div>
+      </div>
+      <button class="cta-btn" id="allGreenContinueBtn">&#128640; Continuar Explorando</button>
+    `;
+    document.getElementById('allGreenContinueBtn').onclick = () => advanceAfterModule();
+  } else if (hasNextModule) {
+    content.innerHTML = `
+      <h3 style="margin:0 0 6px 0;color:var(--green);">&#9989; ¡Módulo ${state.segmentIdx + 1} Superado!</h3>
+      <p style="font-size:0.8rem;color:#cbd5e1;">&#128681; Conquista: <strong>${totalGreenCount} / 36 celdas</strong></p>
+      ${miniGridHTML}
+      <div class="hex-box" style="text-align:center; padding:6px;">
+        <div style="font-size:0.68rem;color:#94a3b8;">Código HEX Auto-Guardado:</div>
+        <div style="font-family:monospace;font-size:0.8rem;font-weight:900;color:var(--cyan);">${currentHex}</div>
+      </div>
+      <button class="cta-btn" id="nextModBtn">&#128640; Siguiente Módulo</button>
+    `;
+    document.getElementById('nextModBtn').onclick = () => { modal.classList.remove('visible'); loadSector(state.sectorIdx, state.segmentIdx + 1, false); };
+  } else if (!isLastSector) {
+    content.innerHTML = `
+      <h3 style="margin:0 0 6px 0;color:var(--green);">&#127942; ¡Sector Completado!</h3>
+      <p style="font-size:0.8rem;color:#cbd5e1;">&#128681; Conquista: ${totalGreenCount} / 36 celdas</p>
+      ${miniGridHTML}
+      <button class="cta-btn" id="nextSecBtn">&#127775; Avanzar al siguiente Sector</button>
+    `;
+    document.getElementById('nextSecBtn').onclick = () => { modal.classList.remove('visible'); loadSector(state.sectorIdx + 1, 0, true); };
+  } else {
+    const canLevelUp = state.campaignLevel < 4;
+    
+    let challengeHTML = '';
+    if (canLevelUp) {
+      challengeHTML = `
+        <div style="background:rgba(255, 171, 0, 0.1); border:1.5px dashed var(--amber); padding:10px 12px; border-radius:10px; margin:12px 0; text-align:left; display:flex; align-items:center; justify-content:space-between; cursor:pointer;" onclick="const cb = document.getElementById('levelUpTimerCheck'); cb.checked = !cb.checked; event.stopPropagation();">
+          <div>
+            <span style="font-size:0.85rem; font-weight:900; color:var(--amber); display:block;">&#128293; RETO EXPERTO</span>
+            <span style="font-size:0.68rem; color:#cbd5e1; font-weight:600;">Activar tiempo límite en el próximo nivel.</span>
+          </div>
+          <input type="checkbox" id="levelUpTimerCheck" ${state.timerEnabled ? 'checked' : ''} style="width:22px; height:22px; accent-color:var(--amber); cursor:pointer;" onclick="event.stopPropagation()">
+        </div>
+      `;
+    }
+
+    content.innerHTML = `
+      <h3 style="margin:0 0 6px 0;color:var(--amber);">&#127756; ¡Campaña Nivel ${state.campaignLevel} Superada!</h3>
+      <p style="font-size:0.8rem;color:#cbd5e1;">${canLevelUp ? '¡Asciende al siguiente Nivel de dificultad!' : '¡Dominio Galiáctico Absoluto!'}</p>
+      ${miniGridHTML}
+      ${challengeHTML}
+      <button class="cta-btn" id="ascendBtn">${canLevelUp ? `&#128640; Ascender al Nivel ${state.campaignLevel + 1}` : `&#128260; Reiniciar Nivel 4 (Láser Ioánico)`}</button>
+    `;
+    document.getElementById('ascendBtn').onclick = () => {
+      if (canLevelUp) {
+        const cb = document.getElementById('levelUpTimerCheck');
+        if (cb) state.timerEnabled = cb.checked;
+        state.campaignLevel++;
+      }
+      modal.classList.remove('visible');
+      saveStateToLocalStorage(); populateDropdowns(); loadSector(0, 0, true);
+    };
+  }
+  modal.classList.add('visible');
+}
+
+function updateTrophyCount() {
+  let earnedCount = 0;
+  if (state.turboCount >= 10) earnedCount++;
+  if (state.turboCount >= 30) earnedCount++;
+  if (state.turboCount >= 75) earnedCount++;
+
+  const greenCount = CANONICAL_PAIRS.filter(([a, b]) => getMastery(a, b) === 3).length;
+  if (greenCount >= 12) earnedCount++;
+  if (greenCount >= 24) earnedCount++;
+  if (greenCount >= 36) earnedCount++;
+
+  if (state.maxStreak >= 10) earnedCount++;
+  if (state.maxStreak >= 25) earnedCount++;
+  if (state.maxStreak >= 50) earnedCount++;
+
+  if (state.perfectMods >= 1) earnedCount++;
+  if (state.perfectMods >= 5) earnedCount++;
+  if (state.perfectMods >= 15) earnedCount++;
+
+  const el = document.getElementById('trophyCountVal');
+  if (el) el.textContent = earnedCount;
+}
+
+function openTrophiesModal() {
+  clearAllTimers();
+  const modal = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+  const greenCount = CANONICAL_PAIRS.filter(([a, b]) => getMastery(a, b) === 3).length;
+  const displayCadet = state.cadetName || 'Comandante';
+
+  function badgeCardHTML(title, current, bVal, sVal, oVal, icon) {
+    const hasBronze = current >= bVal;
+    const hasSilver = current >= sVal;
+    const hasGold = current >= oVal;
+
+    let borderColor = '#24324d';
+    if (hasGold) borderColor = '#ffd700';
+    else if (hasSilver) borderColor = '#c0c0c0';
+    else if (hasBronze) borderColor = '#cd7f32';
+
+    const medalSlot = (earned, emoji, label, goal) => `
+      <div style="display:flex; flex-direction:column; align-items:center; opacity:${earned ? '1' : '0.22'}; filter:${earned ? 'drop-shadow(0 0 6px rgba(255,215,0,0.4))' : 'grayscale(100%)'}; transform:${earned ? 'scale(1.06)' : 'scale(0.92)'}; transition:all 0.2s;">
+        <span style="font-size:1.75rem; line-height:1;">${emoji}</span>
+        <span style="font-size:0.60rem; font-weight:800; color:#cbd5e1; margin-top:3px;">${label} (${goal})</span>
+      </div>
+    `;
+
+    return `
+      <div style="background:#0d1424; border:1.5px solid ${borderColor}; padding:10px 6px; border-radius:12px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:space-between;">
+        <div style="font-size:0.76rem; font-weight:900; color:var(--cyan); margin-bottom:2px;">${icon} ${title}</div>
+        <div style="font-size:0.66rem; color:#94a3b8; font-weight:700; margin-bottom:8px;">Actual: ${current}</div>
+        <div style="display:flex; justify-content:space-around; width:100%; align-items:center;">
+          ${medalSlot(hasBronze, '&#129353;', 'Bronce', bVal)}
+          ${medalSlot(hasSilver, '&#129352;', 'Plata', sVal)}
+          ${medalSlot(hasGold, '&#129351;', 'Oro', oVal)}
+        </div>
+      </div>
+    `;
+  }
+
+  content.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center; margin-bottom:10px;">
+      <h3 style="margin:0;color:var(--cyan);font-size:1.02rem;">&#127942; Sala de Logros (${displayCadet})</h3>
+      <button class="small-btn" onclick="document.getElementById('modalOverlay').classList.remove('visible'); renderStage();">&#10006; Cerrar</button>
+    </div>
+    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; max-height: 65dvh; overflow-y: auto; margin-bottom:10px;">
+      ${badgeCardHTML('Velocidad Turbo', state.turboCount, 10, 30, 75, '&#9889;')}
+      ${badgeCardHTML('Conquistador', greenCount, 12, 24, 36, '&#128681;')}
+      ${badgeCardHTML('Racha Imparable', state.maxStreak, 10, 25, 50, '&#128293;')}
+      ${badgeCardHTML('Escudo Intacto', state.perfectMods, 1, 5, 15, '&#128737;&#65039;')}
+    </div>
+    <button class="cta-btn" onclick="document.getElementById('modalOverlay').classList.remove('visible'); renderStage();">&#128640; Continuar Misión</button>
+  `;
+  modal.classList.add('visible');
+}
+
+function openParentModal() {
+  clearAllTimers();
+  const modal = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+  renderParentReportContent(content);
+  modal.classList.add('visible');
+}
+
+function onModalTitleTap() {
+  modalTitleTapCount++;
+  if (modalTitleTapCount >= 10) {
+    modalTitleTapCount = 0;
+    parentEditUnlocked = true;
+    AudioFX.levelUp();
+    renderParentReportContent(document.getElementById('modalContent'));
+  }
+}
+
+function renderParentReportContent(container) {
+  let countGreen = 0, countAmber = 0, countRed = 0, countBlue = 0;
+  let gridHTML = `<div class="report-grid"><div class="report-header-cell">×</div>`;
+  for (let c = 2; c <= 9; c++) gridHTML += `<div class="report-header-cell">${c}</div>`;
+
+  for (let r = 2; r <= 9; r++) {
+    gridHTML += `<div class="report-header-cell">${r}</div>`;
+    for (let c = 2; c <= 9; c++) {
+      const st = getMastery(r, c);
+      if (st === 3) countGreen++; else if (st === 2) countAmber++; else if (st === 1) countRed++; else countBlue++;
+      const editableClass = parentEditUnlocked ? ' editable' : '';
+      const clickAttr = parentEditUnlocked ? `onclick="onParentCellClick(${r},${c})"` : '';
+      gridHTML += `<div class="report-cell cell-state-${st}${editableClass}" ${clickAttr}>${r*c}</div>`;
+    }
+  }
+  gridHTML += `</div>`;
+
+  const currentHex = encodeFullStateToHex();
+  const metrics = computeUserMetrics();
+
+  // Cálculo de evolución respecto a la línea base inicial
+  let speedDeltaHTML = `<span style="color:#94a3b8;font-size:0.62rem;">(Base en curso)</span>`;
+  let accDeltaHTML = `<span style="color:#94a3b8;font-size:0.62rem;">(${metrics.totalAttempts} int.)</span>`;
+
+  if (baselineStats.locked && baselineStats.initialSpeed > 0) {
+    const spdDiffPct = Math.round(((baselineStats.initialSpeed - metrics.meanTime) / baselineStats.initialSpeed) * 100);
+    const spdSign = spdDiffPct >= 0 ? `+${spdDiffPct}% rápido` : `${spdDiffPct}% lento`;
+    const spdColor = spdDiffPct >= 0 ? 'var(--green)' : 'var(--amber)';
+    speedDeltaHTML = `<span style="color:${spdColor};font-size:0.62rem;font-weight:800;">${spdSign}</span>`;
+
+    const accDiff = metrics.accuracy - baselineStats.initialAcc;
+    const accSign = accDiff >= 0 ? `+${accDiff}% vs inicio` : `${accDiff}% vs inicio`;
+    const accColor = accDiff >= 0 ? 'var(--green)' : 'var(--amber)';
+    accDeltaHTML = `<span style="color:${accColor};font-size:0.62rem;font-weight:800;">${accSign}</span>`;
+  }
+
+  let slowestHTML = '<span style="font-size:0.68rem;color:#64748b;">Aún sin datos suficientes en fases evaluadas.</span>';
+  if (metrics.slowestPairs.length > 0) {
+    slowestHTML = metrics.slowestPairs.map((item, idx) => {
+      const badgeColor = item.time > metrics.meanTime * 1.25 ? 'var(--red)' : 'var(--amber)';
+      return `<span class="rank-chip" style="border-color:${badgeColor};">#${idx + 1} <strong>${item.a}×${item.b}</strong> (${item.time.toFixed(1)}s)</span>`;
+    }).join('');
+  }
+
+  container.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h3 style="margin:0;color:var(--cyan);font-size:0.95rem;" onclick="onModalTitleTap()">&#9881;&#65039; Menú Técnico</h3>
+      <button class="small-btn" onclick="closeModalAndRefresh()">&#10006; Cerrar</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;background:#0d1424;padding:6px 10px;border-radius:8px;margin-top:6px;font-size:0.76rem;font-weight:800;">
+      <span style="color:var(--amber);">&#127894;&#65039; Nivel: ${state.campaignLevel} / 4</span>
+      <span style="color:var(--cyan);">&#11088; Puntaje: ${state.score} pts</span>
+    </div>
+    <div style="display:flex;justify-content:space-around;font-size:0.68rem;margin:8px 0;font-weight:700;">
+      <span style="color:var(--green);">&#129001; Logrado: ${countGreen}</span>
+      <span style="color:var(--amber);">&#128999; En proceso: ${countAmber}</span>
+      <span style="color:var(--red);">&#128997; Con dificultad: ${countRed}</span>
+      <span style="color:var(--cyan);">&#128998; Pendiente: ${countBlue}</span>
+    </div>
+    ${parentEditUnlocked ? '<div style="color:var(--green);font-size:0.7rem;font-weight:700;margin-bottom:4px;">&#128275; Modo Edición Activo</div>' : ''}
+    ${gridHTML}
+
+    <!-- Panel Analítico de Mejora, Uniformidad y Ranking -->
+    <div class="telemetry-box">
+      <div style="font-size:0.74rem;font-weight:800;color:var(--cyan);">📊 Telemetría Cognitiva y Evolución</div>
+      <div class="telemetry-grid">
+        <div class="telemetry-pill">
+          <div style="font-size:0.62rem;color:#94a3b8;font-weight:700;">Precisión</div>
+          <div style="font-size:0.92rem;font-weight:900;color:#fff;">${metrics.accuracy}%</div>
+          <div>${accDeltaHTML}</div>
+        </div>
+        <div class="telemetry-pill">
+          <div style="font-size:0.62rem;color:#94a3b8;font-weight:700;">Velocidad Media</div>
+          <div style="font-size:0.92rem;font-weight:900;color:#fff;">${metrics.meanTime}s</div>
+          <div>${speedDeltaHTML}</div>
+        </div>
+        <div class="telemetry-pill">
+          <div style="font-size:0.62rem;color:#94a3b8;font-weight:700;">Uniformidad</div>
+          <div style="font-size:0.92rem;font-weight:900;color:var(--purple);">${metrics.uniformityPct}%</div>
+          <div style="font-size:0.60rem;color:#94a3b8;">Dispersión ±${metrics.stdDev}s</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:0.70rem;font-weight:800;color:var(--amber);">⏱️ Ranking de Tablas Más Lentas (Prioridad en Sector 5):</div>
+      <div style="margin-top:4px;">${slowestHTML}</div>
+    </div>
+
+    <div class="hex-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.75rem;color:#cbd5e1;font-weight:700;">&#128273; Código HEX (Auto-Guardado):</span>
+        <button class="small-btn" onclick="copyHexCode('${currentHex}')">&#128203; Copiar</button>
+      </div>
+      <div style="font-family:monospace;font-size:0.9rem;font-weight:900;color:var(--cyan);margin:4px 0;word-break:break-all;" id="hexCodeDisplay">${currentHex}</div>
+      <div class="hex-input-row">
+        <input type="text" id="hexLoadInput" class="hex-input" placeholder="Código HEX..." value="${currentHex}">
+        <button class="small-btn" style="background:var(--cyan);color:#090d16;" onclick="applyHexFromInput()">Cargar</button>
+      </div>
+      <div id="hexFeedback" style="font-size:0.72rem;margin-top:4px;color:var(--green);"></div>
+    </div>
+    <button class="danger-btn" onclick="confirmResetGameProgress()">&#128260; Reiniciar Partida / Borrar Progreso</button>
+  `;
+}
+
+function onParentCellClick(r, c) {
+  if (!parentEditUnlocked) return;
+  const nextState = (getMastery(r, c) + 1) % 4;
+  setMastery(r, c, nextState);
+  failCountMap[pairKey(r, c)] = (nextState === 1 || nextState === 2) ? 2 : 0;
+  successStreakMap[pairKey(r, c)] = 0;
+  AudioFX.hit();
+  renderParentReportContent(document.getElementById('modalContent'));
+}
+
+function confirmResetGameProgress() {
+  const modal = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+  const displayCadet = state.cadetName || 'actual';
+  content.innerHTML = `
+    <h3 style="margin:0 0 8px 0;color:var(--red);">&#9888;&#65039; ¿ADVERTENCIA DE REINICIO?</h3>
+    <p style="font-size:0.84rem;color:#cbd5e1;margin:0 0 12px 0;">Estás a punto de borrar todo el progreso, medallas y la conquista verde del perfil <strong>${displayCadet}</strong> para empezar desde cero.</p>
+    <button class="cta-btn" style="background:var(--red); color:#fff; margin-bottom:6px;" onclick="resetGameProgress()">Sí, Borrar Todo</button>
+    <button class="small-btn" style="width:100%; background:#23314f; color:#fff;" onclick="openParentModal()">Cancelar - Volver</button>
+  `;
+}
+
+function resetGameProgress() {
+  document.getElementById('modalOverlay').classList.remove('visible');
+  document.getElementById('splashScreen').classList.remove('hidden');
+  executeNewGame();
+}
+
+function copyHexCode(code) {
+  const inputEl = document.getElementById('hexLoadInput');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(() => {
+      document.getElementById('hexFeedback').textContent = "✔ Código copiado al portapapeles.";
+    }).catch(() => {
+      fallbackCopy(inputEl);
+    });
+  } else {
+    fallbackCopy(inputEl);
+  }
+}
+
+function fallbackCopy(inputEl) {
+  if (inputEl) {
+    inputEl.focus();
+    inputEl.select();
+    try {
+      document.execCommand('copy');
+      document.getElementById('hexFeedback').textContent = "✔ Código copiado.";
+    } catch (e) {
+      document.getElementById('hexFeedback').style.color = 'var(--red)';
+      document.getElementById('hexFeedback').textContent = "✖ Selecciona y copia manualmente el texto.";
+    }
+  }
+}
+
+function applyHexFromInput() {
+  const inputEl = document.getElementById('hexLoadInput');
+  if (inputEl && decodeHexToFullState(inputEl.value)) {
+    saveStateToLocalStorage();
+    AudioFX.levelUp();
+    populateDropdowns();
+    renderParentReportContent(document.getElementById('modalContent'));
+  } else {
+    const fb = document.getElementById('hexFeedback');
+    if (fb) {
+      fb.style.color = 'var(--red)';
+      fb.textContent = "✖ Código HEX inválido.";
+    }
+  }
+}
+
+function closeModalAndRefresh() {
+  document.getElementById('modalOverlay').classList.remove('visible');
+  parentEditUnlocked = false;
+  modalTitleTapCount = 0;
+  populateDropdowns();
+  loadSector(state.sectorIdx, state.segmentIdx, true);
+}
+
+initGame();
+</script>
+</body>
+</html>
