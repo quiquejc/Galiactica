@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#131b2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Matemáticas Galiácticas</title>
 <style>
   :root {
@@ -117,33 +124,40 @@
     justify-content: space-between;
     align-items: center;
     background: #0d1322;
-    padding: 8px 10px;
+    padding: 8px 8px;
     border-bottom: 1px solid var(--panel-border);
-    gap: 6px;
+    gap: 4px;
   }
 
   .hud-title {
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     font-weight: 900;
     color: var(--cyan);
     white-space: nowrap;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
   }
 
   .hud-stats {
     display: flex;
-    gap: 5px;
+    gap: 4px;
     align-items: center;
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
   }
 
   .stat-pill {
     background: #1a253a;
-    padding: 4px 7px;
+    padding: 4px 6px;
     border-radius: 999px;
     border: 1px solid #2e4064;
     cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .stat-pill.daily-done {
+    border-color: var(--green);
+    background: rgba(0, 230, 118, 0.15);
+    color: #69f0ae;
   }
 
   .gear-btn {
@@ -151,8 +165,8 @@
     color: var(--cyan);
     border: 1.5px solid var(--cyan);
     border-radius: 8px;
-    padding: 5px 9px;
-    font-size: 0.95rem;
+    padding: 4px 8px;
+    font-size: 0.9rem;
     font-weight: 800;
     cursor: pointer;
     display: flex;
@@ -512,9 +526,10 @@
 
   <div class="hud">
     <div class="hud-title" onclick="triggerEasterEgg()">
-      &#128640; Matemáticas Galiácticas
+      &#128640; Galiácticas
     </div>
     <div class="hud-stats">
+      <div class="stat-pill" id="dailyStreakPill" onclick="openTrophiesModal()" title="Racha de días entrenando (+10 min/día)">&#128197; <span id="dailyStreakVal">0d</span></div>
       <div class="stat-pill" onclick="openTrophiesModal()" title="Sala de Logros">&#127942; <span id="trophyCountVal">0</span></div>
       <div class="stat-pill">&#11088; <span id="scoreVal">0</span></div>
       <div class="stat-pill">&#128293; <span id="streakVal">0</span></div>
@@ -731,8 +746,19 @@ let masteryMap = {};
 let failCountMap = {};
 let sessionErrorTracker = {};
 let successStreakMap = {};
-let pairStatsMap = {}; // Telemetría por par: { emaTime: null, hits: 0, fails: 0 }
+let pairStatsMap = {};
 let baselineStats = { locked: false, initialSpeed: null, initialAcc: null, initialCV: null };
+
+// Seguimiento de Racha Diaria (+10 minutos activos por día)
+const DAILY_GOAL_SECONDS = 600; // 10 minutos = 600 segundos
+let dailyTracker = {
+  streakCount: 0,
+  lastCompletedDate: null, // 'YYYY-MM-DD'
+  currentDate: null,       // 'YYYY-MM-DD'
+  todaySeconds: 0,
+  lastInteractionTime: Date.now()
+};
+
 let tapCount = 0;
 let parentEditUnlocked = false;
 let modalTitleTapCount = 0;
@@ -748,6 +774,95 @@ let state = {
   timerEnabled: false, allGreenCelebrated: false
 };
 
+function getLocalDateString(dateObj = new Date()) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getYesterdayDateString() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return getLocalDateString(d);
+}
+
+function markUserInteraction() {
+  dailyTracker.lastInteractionTime = Date.now();
+}
+
+function syncDailyDateRollOver() {
+  const today = getLocalDateString();
+  const yesterday = getYesterdayDateString();
+
+  if (dailyTracker.currentDate !== today) {
+    dailyTracker.currentDate = today;
+    dailyTracker.todaySeconds = 0;
+  }
+
+  // Si el último día completado es anterior a ayer, la racha diaria expiró
+  if (dailyTracker.lastCompletedDate &&
+      dailyTracker.lastCompletedDate !== today &&
+      dailyTracker.lastCompletedDate !== yesterday) {
+    dailyTracker.streakCount = 0;
+  }
+}
+
+function startDailyPlaytimeTicker() {
+  setInterval(() => {
+    const splashHidden = document.getElementById('splashScreen').classList.contains('hidden');
+    const modalOpen = document.getElementById('modalOverlay').classList.contains('visible');
+    if (!splashHidden || modalOpen || document.hidden) return;
+
+    // Solo cuenta si el usuario interactuó en los últimos 45 segundos (evita tiempo muerto)
+    if (Date.now() - dailyTracker.lastInteractionTime > 45000) return;
+
+    syncDailyDateRollOver();
+    dailyTracker.todaySeconds++;
+
+    const today = getLocalDateString();
+    const yesterday = getYesterdayDateString();
+
+    if (dailyTracker.todaySeconds >= DAILY_GOAL_SECONDS && dailyTracker.lastCompletedDate !== today) {
+      if (dailyTracker.lastCompletedDate === yesterday) {
+        dailyTracker.streakCount++;
+      } else {
+        dailyTracker.streakCount = 1;
+      }
+      dailyTracker.lastCompletedDate = today;
+      AudioFX.levelUp();
+      showCustomToast(`🔥 ¡META DIARIA DE 10 MIN CUMPLIDA! (${dailyTracker.streakCount}d)`);
+      saveStateToLocalStorage();
+    } else if (dailyTracker.todaySeconds % 15 === 0) {
+      saveStateToLocalStorage();
+    }
+
+    updateDailyHUD();
+  }, 1000);
+}
+
+function updateDailyHUD() {
+  syncDailyDateRollOver();
+  const today = getLocalDateString();
+  const pill = document.getElementById('dailyStreakPill');
+  const valEl = document.getElementById('dailyStreakVal');
+  if (!pill || !valEl) return;
+
+  const isDoneToday = (dailyTracker.lastCompletedDate === today);
+  valEl.textContent = `${dailyTracker.streakCount}d`;
+  if (isDoneToday) {
+    pill.classList.add('daily-done');
+  } else {
+    pill.classList.remove('daily-done');
+  }
+}
+
+function formatMinutesSeconds(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}m ${String(s).padStart(2, '0')}s`;
+}
+
 function pairKey(a, b) { return `${Math.min(a, b)}x${Math.max(a, b)}`; }
 function getMastery(a, b) { return masteryMap[pairKey(a, b)] ?? 0; }
 function setMastery(a, b, val) { masteryMap[pairKey(a, b)] = Math.max(0, Math.min(3, val)); saveStateToLocalStorage(); }
@@ -758,6 +873,13 @@ function getFailCount(a, b) {
   const baseFails = failCountMap[k] || 0;
   if (st === 1 || st === 2) return Math.max(baseFails, 2);
   return baseFails;
+}
+
+function resetTelemetryData() {
+  CANONICAL_PAIRS.forEach(([a, b]) => {
+    pairStatsMap[pairKey(a, b)] = { emaTime: null, hits: 0, fails: 0 };
+  });
+  baselineStats = { locked: false, initialSpeed: null, initialAcc: null, initialCV: null };
 }
 
 function initMasteryMap() {
@@ -788,10 +910,9 @@ function recordPairTelemetry(a, b, isCorrect, elapsedSec) {
     entry.fails++;
   }
 
-  // Fijar línea base automática al alcanzar 15 respuestas evaluadas
   if (!baselineStats.locked) {
     const metrics = computeUserMetrics();
-    if (metrics.totalAttempts >= 15 && metrics.evaluatedPairsCount >= 4) {
+    if (metrics.hasData && metrics.totalAttempts >= 15 && metrics.evaluatedPairsCount >= 4) {
       baselineStats.locked = true;
       baselineStats.initialSpeed = metrics.meanTime;
       baselineStats.initialAcc = metrics.accuracy;
@@ -817,30 +938,37 @@ function computeUserMetrics() {
   });
 
   const totalAttempts = totalHits + totalFails;
-  const accuracy = totalAttempts > 0 ? Math.round((totalHits / totalAttempts) * 100) : 100;
+  const hasData = totalAttempts > 0;
+  const hasTimeData = times.length > 0;
 
-  let meanTime = state.avgSpeed;
-  let stdDev = 0;
-  let uniformityPct = 100;
+  // Si viene de un HEX viejo sin telemetría previa, no mostrar 100% falso
+  const accuracy = hasData ? Math.round((totalHits / totalAttempts) * 100) : null;
 
-  if (times.length > 0) {
-    meanTime = times.reduce((acc, v) => acc + v, 0) / times.length;
+  let meanTime = null;
+  let stdDev = null;
+  let uniformityPct = null;
+
+  if (hasTimeData) {
+    const rawMean = times.reduce((acc, v) => acc + v, 0) / times.length;
+    meanTime = Number(rawMean.toFixed(2));
     if (times.length > 1) {
-      const variance = times.reduce((acc, v) => acc + Math.pow(v - meanTime, 2), 0) / times.length;
-      stdDev = Math.sqrt(variance);
-      const cv = meanTime > 0 ? (stdDev / meanTime) : 0;
+      const variance = times.reduce((acc, v) => acc + Math.pow(v - rawMean, 2), 0) / times.length;
+      const rawStd = Math.sqrt(variance);
+      stdDev = Number(rawStd.toFixed(2));
+      const cv = rawMean > 0 ? (rawStd / rawMean) : 0;
       uniformityPct = Math.max(0, Math.min(100, Math.round((1 - cv) * 100)));
     }
   }
 
-  // Ordenar de más lento a más rápido para el Ranking
   rankedPairs.sort((x, y) => y.time - x.time);
 
   return {
+    hasData,
+    hasTimeData,
     totalAttempts,
     accuracy,
-    meanTime: Number(meanTime.toFixed(2)),
-    stdDev: Number(stdDev.toFixed(2)),
+    meanTime,
+    stdDev,
     uniformityPct,
     evaluatedPairsCount: times.length,
     slowestPairs: rankedPairs.slice(0, 5),
@@ -855,7 +983,6 @@ function getReinforcementPriorityScore(a, b) {
   const st = pairStatsMap[k] || { emaTime: null, hits: 0, fails: 0 };
   const timeWeight = (st.emaTime !== null) ? st.emaTime : state.avgSpeed;
 
-  // Prioridad combinada: Estado (Rojo > Naranja > Azul > Verde) + Fallos + Tiempo en el Ranking
   let statusPenalty = 0;
   if (m === 1) statusPenalty = 100;
   else if (m === 2) statusPenalty = 60;
@@ -894,7 +1021,7 @@ function encodeFullStateToHex() {
   return packed.toString(16).toUpperCase().padStart(26, '0');
 }
 
-function decodeHexToFullState(hexStr) {
+function decodeHexToFullState(hexStr, clearOldTelemetry = false) {
   const clean = (hexStr || '').trim().replace(/[^0-9A-Fa-f]/g, '');
   if (!clean || clean.length > 30) return false;
   try {
@@ -937,6 +1064,11 @@ function decodeHexToFullState(hexStr) {
       successStreakMap[k] = 0;
       matrixVal >>= 2n;
     }
+
+    if (clearOldTelemetry) {
+      resetTelemetryData();
+    }
+
     const allGreenNow = CANONICAL_PAIRS.every(([a, b]) => getMastery(a, b) === 3);
     state.allGreenCelebrated = allGreenNow;
     return true;
@@ -945,14 +1077,20 @@ function decodeHexToFullState(hexStr) {
 
 function saveStateToLocalStorage() {
   try {
-    localStorage.setItem('mat_galiacticas_hex_v41', encodeFullStateToHex());
+    localStorage.setItem('mat_galiacticas_hex_v42', encodeFullStateToHex());
     if (state.cadetName) {
       localStorage.setItem('mat_galiacticas_cadet', state.cadetName);
     }
     localStorage.setItem('mat_galiacticas_timer', state.timerEnabled ? '1' : '0');
-    localStorage.setItem('mat_galiacticas_telemetry_v41', JSON.stringify({
+    localStorage.setItem('mat_galiacticas_telemetry_v42', JSON.stringify({
       pairStatsMap,
       baselineStats
+    }));
+    localStorage.setItem('mat_galiacticas_daily_v42', JSON.stringify({
+      streakCount: dailyTracker.streakCount,
+      lastCompletedDate: dailyTracker.lastCompletedDate,
+      currentDate: dailyTracker.currentDate,
+      todaySeconds: dailyTracker.todaySeconds
     }));
   } catch (e) {}
 }
@@ -960,13 +1098,13 @@ function saveStateToLocalStorage() {
 function loadStateFromLocalStorage() {
   let loadedHex = false;
   try {
-    const saved = localStorage.getItem('mat_galiacticas_hex_v41');
-    if (saved && decodeHexToFullState(saved)) {
+    const saved = localStorage.getItem('mat_galiacticas_hex_v42');
+    if (saved && decodeHexToFullState(saved, false)) {
       loadedHex = true;
     } else {
-      for (let v = 40; v >= 7; v--) {
+      for (let v = 41; v >= 7; v--) {
         const oldSaved = localStorage.getItem(`mat_galiacticas_hex_v${v}`);
-        if (oldSaved && decodeHexToFullState(oldSaved)) {
+        if (oldSaved && decodeHexToFullState(oldSaved, true)) {
           loadedHex = true;
           break;
         }
@@ -980,12 +1118,23 @@ function loadStateFromLocalStorage() {
     if (savedTimer !== null) {
       state.timerEnabled = (savedTimer === '1');
     }
-    const savedTel = localStorage.getItem('mat_galiacticas_telemetry_v41');
+    const savedTel = localStorage.getItem('mat_galiacticas_telemetry_v42') || localStorage.getItem('mat_galiacticas_telemetry_v41');
     if (savedTel) {
       const parsed = JSON.parse(savedTel);
       if (parsed && parsed.pairStatsMap) pairStatsMap = parsed.pairStatsMap;
       if (parsed && parsed.baselineStats) baselineStats = parsed.baselineStats;
     }
+    const savedDaily = localStorage.getItem('mat_galiacticas_daily_v42');
+    if (savedDaily) {
+      const parsedD = JSON.parse(savedDaily);
+      if (parsedD) {
+        dailyTracker.streakCount = Number(parsedD.streakCount) || 0;
+        dailyTracker.lastCompletedDate = parsedD.lastCompletedDate || null;
+        dailyTracker.currentDate = parsedD.currentDate || getLocalDateString();
+        dailyTracker.todaySeconds = Number(parsedD.todaySeconds) || 0;
+      }
+    }
+    syncDailyDateRollOver();
   } catch (e) {
     initMasteryMap();
   }
@@ -1008,7 +1157,8 @@ function checkSplashState() {
     newGameBtn.style.display = 'block';
     descText.innerHTML = `
       ¡Bienvenido de nuevo, Comandante <strong>${state.cadetName}</strong>!<br>
-      &#127894;&#65039; Nivel ${state.campaignLevel} | Sector ${state.sectorIdx + 1} | &#128681; Conquista: ${totalGreen}/36
+      &#127894;&#65039; Nivel ${state.campaignLevel} | Sector ${state.sectorIdx + 1} | &#128681; Conquista: ${totalGreen}/36<br>
+      &#128197; Racha Diaria (+10 min): <strong>${dailyTracker.streakCount} días</strong>
     `;
     mainBtn.innerHTML = `&#128640; Continuar Misión (${state.cadetName})`;
   } else if (anyProgress && !state.cadetName) {
@@ -1032,9 +1182,11 @@ function checkSplashState() {
 
   document.getElementById('navTimerCheckbox').checked = state.timerEnabled;
   updateTrophyCount();
+  updateDailyHUD();
 }
 
 function startMissionFromSplash() {
+  markUserInteraction();
   const inputGroup = document.getElementById('cadetInputGroup');
   const nameInput = document.getElementById('cadetNameInput');
 
@@ -1072,11 +1224,13 @@ function cancelNewGame() {
 function executeNewGame() {
   clearAllTimers();
   try {
-    localStorage.removeItem('mat_galiacticas_hex_v41');
-    for (let v = 40; v >= 7; v--) localStorage.removeItem(`mat_galiacticas_hex_v${v}`);
+    localStorage.removeItem('mat_galiacticas_hex_v42');
+    for (let v = 41; v >= 7; v--) localStorage.removeItem(`mat_galiacticas_hex_v${v}`);
     localStorage.removeItem('mat_galiacticas_cadet');
     localStorage.removeItem('mat_galiacticas_timer');
+    localStorage.removeItem('mat_galiacticas_telemetry_v42');
     localStorage.removeItem('mat_galiacticas_telemetry_v41');
+    localStorage.removeItem('mat_galiacticas_daily_v42');
   } catch (e) {}
 
   state.cadetName = '';
@@ -1091,6 +1245,13 @@ function executeNewGame() {
   state.avgSpeed = 2.4;
   state.timerEnabled = false;
   state.allGreenCelebrated = false;
+  dailyTracker = {
+    streakCount: 0,
+    lastCompletedDate: null,
+    currentDate: getLocalDateString(),
+    todaySeconds: 0,
+    lastInteractionTime: Date.now()
+  };
   initMasteryMap();
 
   document.getElementById('newGameConfirmBox').style.display = 'none';
@@ -1105,6 +1266,7 @@ function toggleMigrationBox() {
 }
 
 function applyInitialHexMigration() {
+  markUserInteraction();
   const hexVal = document.getElementById('initialHexInput').value.trim();
   const errEl = document.getElementById('splashHexError');
   const inputGroup = document.getElementById('cadetInputGroup');
@@ -1115,7 +1277,8 @@ function applyInitialHexMigration() {
     if (inputName) state.cadetName = inputName;
   }
 
-  if (decodeHexToFullState(hexVal)) {
+  // Al cargar un HEX manualmente, se limpia la telemetría previa para no inventar 100% de precisión
+  if (decodeHexToFullState(hexVal, true)) {
     if (errEl) errEl.style.display = 'none';
     if (!state.cadetName) {
       inputGroup.style.display = 'block';
@@ -1164,7 +1327,6 @@ function buildRandomModulesForSector(sectorIdx) {
   let selectedPairs = [];
 
   if (safeIdx === 4) {
-    // Sector 5 (Órbita de Refuerzo): Prioriza celdas Rojas/Naranjas + las más lentas del Ranking de velocidad
     const allSortedByNeed = [...CANONICAL_PAIRS].sort((p1, p2) => {
       return getReinforcementPriorityScore(p2[0], p2[1]) - getReinforcementPriorityScore(p1[0], p1[1]);
     });
@@ -1172,7 +1334,6 @@ function buildRandomModulesForSector(sectorIdx) {
     const targetCount = Math.max(12, Math.min(20, Math.ceil(Math.max(12, urgentCount + 4) / sec.chunkSize) * sec.chunkSize));
     selectedPairs = allSortedByNeed.slice(0, targetCount);
   } else if (safeIdx === 3) {
-    // Sector 4: combina núcleo 6,7,8 con las 3 tablas más lentas o difíciles del usuario
     const poolExtras = [[6,6],[7,7],[8,8],[6,9],[7,9],[8,9],[4,7],[4,8]];
     poolExtras.sort((p1, p2) => getReinforcementPriorityScore(p2[0], p2[1]) - getReinforcementPriorityScore(p1[0], p1[1]));
     selectedPairs = shuffleArray([...sec.pairs, ...poolExtras.slice(0, 3)]);
@@ -1200,8 +1361,11 @@ function initGame() {
   initMasteryMap();
   checkSplashState();
   populateDropdowns();
+  startDailyPlaytimeTicker();
 
+  window.addEventListener('pointerdown', markUserInteraction, { passive: true });
   window.addEventListener('keydown', (e) => {
+    markUserInteraction();
     if (state.phase !== 4 || state.inputLocked) return;
     if (document.getElementById('modalOverlay').classList.contains('visible')) return;
     if (!document.getElementById('splashScreen').classList.contains('hidden')) return;
@@ -1352,6 +1516,7 @@ function updateHUD() {
   document.getElementById('scoreVal').textContent = state.score;
   document.getElementById('streakVal').textContent = state.streak;
   updateTrophyCount();
+  updateDailyHUD();
   updateTachometerDisplay();
 }
 
@@ -1369,6 +1534,7 @@ function updateTachometerDisplay() {
 
 function toggleCommutative() {
   if (state.inputLocked) return;
+  markUserInteraction();
   state.rotated = !state.rotated;
   AudioFX.hit();
   renderMatrix(getCurrentFact());
@@ -1569,6 +1735,7 @@ function startTimerFormModalSafeTimer() {
 
 function pressDigit(d) {
   if (state.inputLocked) return;
+  markUserInteraction();
   if (state.typedValue.length < 3) {
     state.typedValue += d;
     AudioFX.playTone(600, 'sine', 0.05, 0);
@@ -1578,12 +1745,14 @@ function pressDigit(d) {
 }
 function clearTyped() {
   if (state.inputLocked) return;
+  markUserInteraction();
   state.typedValue = state.typedValue.slice(0, -1);
   const el = document.getElementById('typedDisplay');
   if (el) el.textContent = state.typedValue === '' ? '?' : state.typedValue;
 }
 function submitTyped() {
   if (state.inputLocked || state.typedValue === '') return;
+  markUserInteraction();
   const fact = getCurrentFact();
   const val = parseInt(state.typedValue, 10);
   state.typedValue = '';
@@ -1600,6 +1769,7 @@ function updateProgressBar(current, total, label) {
 function processAttempt(selected, correct, btnElement, fact) {
   if (state.inputLocked) return;
   state.inputLocked = true;
+  markUserInteraction();
   clearActiveTimer();
 
   let elapsedSec = (Date.now() - state.timerStart) / 1000;
@@ -1619,7 +1789,7 @@ function processAttempt(selected, correct, btnElement, fact) {
 
     if (isTurbo) {
       state.turboCount++;
-      showTurboToast();
+      showCustomToast('⚡ TURBO +15');
       AudioFX.hit(true, state.streak);
     } else {
       AudioFX.hit(false);
@@ -1701,7 +1871,7 @@ function processAttempt(selected, correct, btnElement, fact) {
   }
 }
 
-function showTurboToast() {
+function showCustomToast(text) {
   const card = document.getElementById('interactionCard');
   if (!card) return;
   const existing = card.querySelector('.turbo-toast');
@@ -1709,9 +1879,9 @@ function showTurboToast() {
 
   const toast = document.createElement('div');
   toast.className = 'turbo-toast';
-  toast.textContent = '⚡ TURBO +15';
+  toast.textContent = text;
   card.appendChild(toast);
-  setTimeout(() => toast.remove(), 400);
+  setTimeout(() => toast.remove(), 450);
 }
 
 function startPhaseQueue(nextPhase) {
@@ -1740,6 +1910,7 @@ function triggerRepairModal(fact) {
       <button class="cta-btn" id="repairBtn">&#9889; Confirmar</button>
     `;
     document.getElementById('repairBtn').onclick = () => {
+      markUserInteraction();
       AudioFX.hit(); state.repairRepsLeft--;
       if (state.repairRepsLeft > 0) renderRepair();
       else { modal.classList.remove('visible'); renderStage(); }
@@ -1892,10 +2063,12 @@ function updateTrophyCount() {
 
 function openTrophiesModal() {
   clearAllTimers();
+  syncDailyDateRollOver();
   const modal = document.getElementById('modalOverlay');
   const content = document.getElementById('modalContent');
   const greenCount = CANONICAL_PAIRS.filter(([a, b]) => getMastery(a, b) === 3).length;
   const displayCadet = state.cadetName || 'Comandante';
+  const todayPct = Math.min(100, Math.round((dailyTracker.todaySeconds / DAILY_GOAL_SECONDS) * 100));
 
   function badgeCardHTML(title, current, bVal, sVal, oVal, icon) {
     const hasBronze = current >= bVal;
@@ -1928,11 +2101,23 @@ function openTrophiesModal() {
   }
 
   content.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center; margin-bottom:10px;">
+    <div style="display:flex;justify-content:space-between;align-items:center; margin-bottom:8px;">
       <h3 style="margin:0;color:var(--cyan);font-size:1.02rem;">&#127942; Sala de Logros (${displayCadet})</h3>
       <button class="small-btn" onclick="document.getElementById('modalOverlay').classList.remove('visible'); renderStage();">&#10006; Cerrar</button>
     </div>
-    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; max-height: 65dvh; overflow-y: auto; margin-bottom:10px;">
+
+    <!-- Barra de Racha Diaria (+10 min/día) -->
+    <div style="background:#0d1424; border:1px solid #263554; border-radius:10px; padding:8px 10px; margin-bottom:10px; text-align:left;">
+      <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:800; color:var(--amber);">
+        <span>&#128197; Racha Diaria (+10 min): ${dailyTracker.streakCount} días</span>
+        <span style="color:var(--cyan);">Hoy: ${formatMinutesSeconds(dailyTracker.todaySeconds)} / 10m</span>
+      </div>
+      <div class="progress-track" style="margin-top:5px;">
+        <div class="progress-fill" style="width:${todayPct}%;"></div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; max-height: 58dvh; overflow-y: auto; margin-bottom:10px;">
       ${badgeCardHTML('Velocidad Turbo', state.turboCount, 10, 30, 75, '&#9889;')}
       ${badgeCardHTML('Conquistador', greenCount, 12, 24, 36, '&#128681;')}
       ${badgeCardHTML('Racha Imparable', state.maxStreak, 10, 25, 50, '&#128293;')}
@@ -1945,6 +2130,7 @@ function openTrophiesModal() {
 
 function openParentModal() {
   clearAllTimers();
+  syncDailyDateRollOver();
   const modal = document.getElementById('modalOverlay');
   const content = document.getElementById('modalContent');
   renderParentReportContent(content);
@@ -1981,23 +2167,28 @@ function renderParentReportContent(container) {
   const currentHex = encodeFullStateToHex();
   const metrics = computeUserMetrics();
 
-  // Cálculo de evolución respecto a la línea base inicial
-  let speedDeltaHTML = `<span style="color:#94a3b8;font-size:0.62rem;">(Base en curso)</span>`;
-  let accDeltaHTML = `<span style="color:#94a3b8;font-size:0.62rem;">(${metrics.totalAttempts} int.)</span>`;
+  // Manejo de estados S/D (Sin Datos) cuando se carga un HEX antiguo sin telemetría
+  const accValueStr = metrics.hasData ? `${metrics.accuracy}%` : 'S/D';
+  const speedValueStr = metrics.hasTimeData ? `${metrics.meanTime}s` : 'S/D';
+  const unifValueStr = (metrics.uniformityPct !== null) ? `${metrics.uniformityPct}%` : 'S/D';
+  const stdDevStr = (metrics.stdDev !== null) ? `Dispersión ±${metrics.stdDev}s` : '(Aún no medido)';
 
-  if (baselineStats.locked && baselineStats.initialSpeed > 0) {
+  let speedDeltaHTML = `<span style="color:#94a3b8;font-size:0.60rem;">${metrics.hasTimeData ? '(Base en curso)' : '(Aún no medido)'}</span>`;
+  let accDeltaHTML = `<span style="color:#94a3b8;font-size:0.60rem;">${metrics.hasData ? `(${metrics.totalAttempts} int.)` : '(Aún no medido)'}</span>`;
+
+  if (baselineStats.locked && baselineStats.initialSpeed > 0 && metrics.hasTimeData) {
     const spdDiffPct = Math.round(((baselineStats.initialSpeed - metrics.meanTime) / baselineStats.initialSpeed) * 100);
     const spdSign = spdDiffPct >= 0 ? `+${spdDiffPct}% rápido` : `${spdDiffPct}% lento`;
     const spdColor = spdDiffPct >= 0 ? 'var(--green)' : 'var(--amber)';
-    speedDeltaHTML = `<span style="color:${spdColor};font-size:0.62rem;font-weight:800;">${spdSign}</span>`;
+    speedDeltaHTML = `<span style="color:${spdColor};font-size:0.60rem;font-weight:800;">${spdSign}</span>`;
 
     const accDiff = metrics.accuracy - baselineStats.initialAcc;
     const accSign = accDiff >= 0 ? `+${accDiff}% vs inicio` : `${accDiff}% vs inicio`;
     const accColor = accDiff >= 0 ? 'var(--green)' : 'var(--amber)';
-    accDeltaHTML = `<span style="color:${accColor};font-size:0.62rem;font-weight:800;">${accSign}</span>`;
+    accDeltaHTML = `<span style="color:${accColor};font-size:0.60rem;font-weight:800;">${accSign}</span>`;
   }
 
-  let slowestHTML = '<span style="font-size:0.68rem;color:#64748b;">Aún sin datos suficientes en fases evaluadas.</span>';
+  let slowestHTML = '<span style="font-size:0.68rem;color:#64748b;">Sin telemetría aún (juega en Fase 2–4 para medir).</span>';
   if (metrics.slowestPairs.length > 0) {
     slowestHTML = metrics.slowestPairs.map((item, idx) => {
       const badgeColor = item.time > metrics.meanTime * 1.25 ? 'var(--red)' : 'var(--amber)';
@@ -2010,9 +2201,10 @@ function renderParentReportContent(container) {
       <h3 style="margin:0;color:var(--cyan);font-size:0.95rem;" onclick="onModalTitleTap()">&#9881;&#65039; Menú Técnico</h3>
       <button class="small-btn" onclick="closeModalAndRefresh()">&#10006; Cerrar</button>
     </div>
-    <div style="display:flex;justify-content:space-between;background:#0d1424;padding:6px 10px;border-radius:8px;margin-top:6px;font-size:0.76rem;font-weight:800;">
-      <span style="color:var(--amber);">&#127894;&#65039; Nivel: ${state.campaignLevel} / 4</span>
-      <span style="color:var(--cyan);">&#11088; Puntaje: ${state.score} pts</span>
+    <div style="display:flex;justify-content:space-between;background:#0d1424;padding:6px 10px;border-radius:8px;margin-top:6px;font-size:0.74rem;font-weight:800;">
+      <span style="color:var(--amber);">&#127894;&#65039; Nivel: ${state.campaignLevel}/4</span>
+      <span style="color:var(--green);">&#128197; Racha: ${dailyTracker.streakCount}d (${formatMinutesSeconds(dailyTracker.todaySeconds)})</span>
+      <span style="color:var(--cyan);">&#11088; ${state.score} pts</span>
     </div>
     <div style="display:flex;justify-content:space-around;font-size:0.68rem;margin:8px 0;font-weight:700;">
       <span style="color:var(--green);">&#129001; Logrado: ${countGreen}</span>
@@ -2029,18 +2221,18 @@ function renderParentReportContent(container) {
       <div class="telemetry-grid">
         <div class="telemetry-pill">
           <div style="font-size:0.62rem;color:#94a3b8;font-weight:700;">Precisión</div>
-          <div style="font-size:0.92rem;font-weight:900;color:#fff;">${metrics.accuracy}%</div>
+          <div style="font-size:0.92rem;font-weight:900;color:#fff;">${accValueStr}</div>
           <div>${accDeltaHTML}</div>
         </div>
         <div class="telemetry-pill">
           <div style="font-size:0.62rem;color:#94a3b8;font-weight:700;">Velocidad Media</div>
-          <div style="font-size:0.92rem;font-weight:900;color:#fff;">${metrics.meanTime}s</div>
+          <div style="font-size:0.92rem;font-weight:900;color:#fff;">${speedValueStr}</div>
           <div>${speedDeltaHTML}</div>
         </div>
         <div class="telemetry-pill">
           <div style="font-size:0.62rem;color:#94a3b8;font-weight:700;">Uniformidad</div>
-          <div style="font-size:0.92rem;font-weight:900;color:var(--purple);">${metrics.uniformityPct}%</div>
-          <div style="font-size:0.60rem;color:#94a3b8;">Dispersión ±${metrics.stdDev}s</div>
+          <div style="font-size:0.92rem;font-weight:900;color:var(--purple);">${unifValueStr}</div>
+          <div style="font-size:0.60rem;color:#94a3b8;">${stdDevStr}</div>
         </div>
       </div>
       <div style="margin-top:8px;font-size:0.70rem;font-weight:800;color:var(--amber);">⏱️ Ranking de Tablas Más Lentas (Prioridad en Sector 5):</div>
@@ -2120,11 +2312,20 @@ function fallbackCopy(inputEl) {
 
 function applyHexFromInput() {
   const inputEl = document.getElementById('hexLoadInput');
-  if (inputEl && decodeHexToFullState(inputEl.value)) {
+  const newCode = inputEl ? inputEl.value.trim() : '';
+  const currentCode = encodeFullStateToHex();
+  const isDifferentCode = (newCode.toUpperCase() !== currentCode.toUpperCase());
+
+  if (inputEl && decodeHexToFullState(newCode, isDifferentCode)) {
     saveStateToLocalStorage();
     AudioFX.levelUp();
     populateDropdowns();
     renderParentReportContent(document.getElementById('modalContent'));
+    const fb = document.getElementById('hexFeedback');
+    if (fb) {
+      fb.style.color = 'var(--green)';
+      fb.textContent = "✔ Código HEX cargado correctamente.";
+    }
   } else {
     const fb = document.getElementById('hexFeedback');
     if (fb) {
@@ -2143,6 +2344,14 @@ function closeModalAndRefresh() {
 }
 
 initGame();
+
+// Registro del Service Worker para instalación PWA en Android / Chrome
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
+
